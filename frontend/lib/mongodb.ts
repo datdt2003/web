@@ -35,6 +35,7 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      dbName: "sac_viet",
     }
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {

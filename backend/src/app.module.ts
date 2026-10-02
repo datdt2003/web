@@ -26,6 +26,7 @@ import { AppController } from './app.controller';
         uri:
           config.get<string>('MONGODB_URI') ||
           'mongodb+srv://duongtiendat0012_db_user:honydatviet123@honydatviet.nnfadap.mongodb.net/sac_viet?retryWrites=true&w=majority',
+        dbName: 'sac_viet',
       }),
     }),
 

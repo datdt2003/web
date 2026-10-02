@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
 import { Ethnic } from "@/models/Ethnic"
+import { ethnicGroups, regionsForEthnic, type RegionId } from "@/lib/ethnic-data"
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const region = searchParams.get("region")
+  const q = searchParams.get("q")?.trim()
+
   try {
     await connectDB()
-
-    const { searchParams } = new URL(request.url)
-    const region = searchParams.get("region")
-    const q = searchParams.get("q")?.trim()
 
     const filter: Record<string, any> = {}
 
@@ -26,17 +27,36 @@ export async function GET(request: NextRequest) {
 
     const ethnics = await Ethnic.find(filter).sort({ population: -1 }).lean()
 
-    return NextResponse.json({
-      success: true,
-      count: ethnics.length,
-      data: ethnics,
-    })
+    if (ethnics && ethnics.length > 0) {
+      return NextResponse.json({
+        success: true,
+        count: ethnics.length,
+        data: ethnics,
+      })
+    }
   } catch (error: any) {
-    console.error("Get ethnics error:", error)
-    return NextResponse.json(
-      { error: "Không thể tải danh sách dân tộc từ cơ sở dữ liệu." },
-      { status: 500 }
+    console.error("Get ethnics error, falling back to static data:", error)
+  }
+
+  // Fallback sang dữ liệu tĩnh chuẩn 54 dân tộc
+  let fallbackData = [...ethnicGroups]
+  if (region && ["bac", "trung", "nam"].includes(region)) {
+    fallbackData = fallbackData.filter((e) => regionsForEthnic(e).includes(region as RegionId))
+  }
+  if (q) {
+    const query = q.toLowerCase()
+    fallbackData = fallbackData.filter(
+      (e) =>
+        e.name.toLowerCase().includes(query) ||
+        (e.altNames && e.altNames.toLowerCase().includes(query)) ||
+        e.blurb.toLowerCase().includes(query)
     )
   }
+
+  return NextResponse.json({
+    success: true,
+    count: fallbackData.length,
+    data: fallbackData,
+  })
 }
 

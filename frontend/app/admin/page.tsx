@@ -239,13 +239,45 @@ export default function AdminPage() {
   const fetchEthnics = async () => {
     setLoadingEthnics(true)
     try {
-      const res = await fetch(`${BACKEND_URL}/api/ethnic`).catch(() => fetch("/api/ethnic"))
-      if (res.ok) {
-        const data = await res.json()
-        setEthnics(data.data || [])
+      let loadedEthnics: Ethnic[] = []
+
+      // 1. Thử gọi backend NestJS trước
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/ethnic`)
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data.data) && data.data.length > 0) {
+            loadedEthnics = data.data
+          }
+        }
+      } catch (e) {
+        console.warn("Backend /api/ethnic fetch failed:", e)
       }
+
+      // 2. Nếu backend chưa trả về dữ liệu, thử gọi Next.js API route nội bộ
+      if (loadedEthnics.length === 0) {
+        try {
+          const nextRes = await fetch("/api/ethnic")
+          if (nextRes.ok) {
+            const nextData = await nextRes.json()
+            if (Array.isArray(nextData.data) && nextData.data.length > 0) {
+              loadedEthnics = nextData.data
+            }
+          }
+        } catch (e) {
+          console.warn("Next.js /api/ethnic fetch failed:", e)
+        }
+      }
+
+      // 3. Fallback an toàn sang dữ liệu 54 dân tộc chuẩn có sẵn
+      if (loadedEthnics.length === 0) {
+        loadedEthnics = ethnicGroups
+      }
+
+      setEthnics(loadedEthnics)
     } catch (err) {
       console.error("Lỗi khi tải danh sách dân tộc:", err)
+      setEthnics(ethnicGroups)
     } finally {
       setLoadingEthnics(false)
     }
@@ -663,13 +695,22 @@ export default function AdminPage() {
     }
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/ethnic/${editingEthnic.slug}`, {
+      let res = await fetch(`${BACKEND_URL}/api/ethnic/${editingEthnic.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      })
+      }).catch(() => null)
 
-      if (res.ok) {
+      if (!res || !res.ok) {
+        // Dự phòng gọi endpoint Next.js nội bộ
+        res = await fetch(`/api/ethnic/${editingEthnic.slug}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).catch(() => null)
+      }
+
+      if (res && res.ok) {
         const result = await res.json()
         const updated = result.data || payload
         setEthnics((prev) =>
@@ -678,8 +719,8 @@ export default function AdminPage() {
         setToastMessage(`Đã lưu thay đổi cho dân tộc ${editingEthnic.name}!`)
         setEditingEthnic(null)
       } else {
-        const errorData = await res.json()
-        alert(errorData.message || "Cập nhật không thành công.")
+        const errorData = res ? await res.json().catch(() => ({})) : {}
+        alert(errorData.message || errorData.error || "Cập nhật không thành công.")
       }
     } catch (err) {
       console.error("Save error:", err)
