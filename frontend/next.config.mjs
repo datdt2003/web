@@ -5,7 +5,27 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'honydatvietbe.vercel.app',
+      },
+    ],
   },
-}
+  async rewrites() {
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL || 'https://honydatvietbe.vercel.app';
+    return [
+      {
+        source: '/backend-api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        source: '/uploads/:path*',
+        destination: `${backendUrl}/uploads/:path*`,
+      },
+    ];
+  },
+};
 
-export default nextConfig
+export default nextConfig;

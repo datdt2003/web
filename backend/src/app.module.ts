@@ -8,7 +8,10 @@ import { AuthModule } from './auth/auth.module';
 import { OrderModule } from './order/order.module';
 import { UploadModule } from './upload/upload.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { AppController } from './app.controller';
+
 @Module({
+  controllers: [AppController],
   imports: [
     // 1. Quản lý biến môi trường (.env)
     ConfigModule.forRoot({

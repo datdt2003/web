@@ -10,10 +10,15 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs';
 
-// Đảm bảo thư mục uploads tồn tại
-const uploadDir = join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Đảm bảo thư mục uploads tồn tại an toàn trong mọi môi trường (kể cả Serverless read-only)
+const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const uploadDir = isVercel ? join('/tmp', 'uploads') : join(process.cwd(), 'uploads');
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (e) {
+  console.warn('Cannot create uploads directory:', e);
 }
 
 @Controller('upload')
@@ -65,7 +70,8 @@ export class UploadController {
       throw new BadRequestException('Không tìm thấy file tải lên');
     }
 
-    const host = process.env.BACKEND_URL || 'http://localhost:5000';
+    const defaultHost = isVercel ? 'https://honydatvietbe.vercel.app' : 'http://localhost:5000';
+    const host = process.env.BACKEND_URL || defaultHost;
     const fileUrl = `${host}/uploads/${file.filename}`;
 
     return {
