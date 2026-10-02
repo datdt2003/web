@@ -4,7 +4,14 @@ import { NestExpressApplication, ExpressAdapter } from '@nestjs/platform-express
 import express, { Express, Request, Response } from 'express';
 import { join } from 'path';
 import * as fs from 'fs';
+import * as dns from 'dns';
 import { AppModule } from './app.module';
+
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch {
+  // Ignored
+}
 
 const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const uploadDir = isVercel ? join('/tmp', 'uploads') : join(process.cwd(), 'uploads');

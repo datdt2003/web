@@ -1,6 +1,15 @@
 import mongoose from "mongoose"
+import dns from "dns"
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/sac_viet"
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"])
+} catch {
+  // Ignored in restricted environments
+}
+
+const MONGODB_URI =
+  process.env.MONGODB_URI ||
+  "mongodb+srv://duongtiendat0012_db_user:honydatviet123@honydatviet.nnfadap.mongodb.net/sac_viet?retryWrites=true&w=majority"
 
 interface MongooseCache {
   conn: typeof mongoose | null

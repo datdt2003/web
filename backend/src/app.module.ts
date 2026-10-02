@@ -25,7 +25,7 @@ import { AppController } from './app.controller';
       useFactory: (config: ConfigService) => ({
         uri:
           config.get<string>('MONGODB_URI') ||
-          'mongodb://127.0.0.1:27017/sac_viet',
+          'mongodb+srv://duongtiendat0012_db_user:honydatviet123@honydatviet.nnfadap.mongodb.net/sac_viet?retryWrites=true&w=majority',
       }),
     }),
 
