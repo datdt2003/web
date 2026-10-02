@@ -1,0 +1,114 @@
+[
+  {
+    "id": "p-hmong-1",
+    "name": "Khăn thổ cẩm H'Mông thêu tay",
+    "price": 350000,
+    "image": "/images/ethnic-hmong.png",
+    "ethnicSlug": "hmong",
+    "category": "Thổ cẩm"
+  },
+  {
+    "id": "p-hmong-2",
+    "name": "Khèn Mông truyền thống",
+    "price": 1250000,
+    "image": "/images/ethnic-hmong.png",
+    "ethnicSlug": "hmong",
+    "category": "Nhạc cụ"
+  },
+  {
+    "id": "p-dao-1",
+    "name": "Túi thêu chỉ màu người Dao",
+    "price": 280000,
+    "image": "/images/ethnic-dao.png",
+    "ethnicSlug": "dao",
+    "category": "Thổ cẩm"
+  },
+  {
+    "id": "p-dao-2",
+    "name": "Gói lá thuốc tắm người Dao đỏ",
+    "price": 150000,
+    "image": "/images/ethnic-dao.png",
+    "ethnicSlug": "dao",
+    "category": "Đặc sản"
+  },
+  {
+    "id": "p-thai-1",
+    "name": "Khăn piêu thêu tay Thái",
+    "price": 320000,
+    "image": "/images/ethnic-thai.png",
+    "ethnicSlug": "thai",
+    "category": "Thổ cẩm"
+  },
+  {
+    "id": "p-thai-2",
+    "name": "Váy áo cóm Thái",
+    "price": 890000,
+    "image": "/images/ethnic-thai.png",
+    "ethnicSlug": "thai",
+    "category": "Trang phục"
+  },
+  {
+    "id": "p-tay-1",
+    "name": "Đàn tính dân tộc Tày",
+    "price": 750000,
+    "image": "/images/ethnic-tay.png",
+    "ethnicSlug": "tay",
+    "category": "Nhạc cụ"
+  },
+  {
+    "id": "p-cham-1",
+    "name": "Bình gốm Bàu Trúc thủ công",
+    "price": 450000,
+    "image": "/images/ethnic-cham.png",
+    "ethnicSlug": "cham",
+    "category": "Gốm sứ"
+  },
+  {
+    "id": "p-cham-2",
+    "name": "Khăn dệt Mỹ Nghiệp Chăm",
+    "price": 390000,
+    "image": "/images/ethnic-cham.png",
+    "ethnicSlug": "cham",
+    "category": "Thổ cẩm"
+  },
+  {
+    "id": "p-ede-1",
+    "name": "Vòng tay đồng Ê Đê",
+    "price": 210000,
+    "image": "/images/ethnic-ede.png",
+    "ethnicSlug": "e-de",
+    "category": "Trang sức"
+  },
+  {
+    "id": "p-ede-2",
+    "name": "Chiêng đồng Tây Nguyên mini",
+    "price": 1450000,
+    "image": "/images/ethnic-ede.png",
+    "ethnicSlug": "gia-rai",
+    "category": "Nhạc cụ"
+  },
+  {
+    "id": "p-khmer-1",
+    "name": "Khăn rằn Khmer Nam Bộ",
+    "price": 180000,
+    "image": "/images/ethnic-khmer.png",
+    "ethnicSlug": "khmer",
+    "category": "Thổ cẩm"
+  },
+  {
+    "id": "p-kinh-1",
+    "name": "Áo dài lụa truyền thống",
+    "price": 1200000,
+    "image": "/images/ethnic-kinh.png",
+    "ethnicSlug": "kinh",
+    "category": "Trang phục"
+  },
+  {
+    "id": "p-kinh-2",
+    "name": "Nón lá Việt Nam",
+    "price": 120000,
+    "image": "/images/ethnic-kinh.png",
+    "ethnicSlug": "kinh",
+    "category": "Thủ công"
+  }
+]

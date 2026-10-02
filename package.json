@@ -1,0 +1,15 @@
+{
+  "name": "thiet-ke-website-54-dan",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently -n \"NEST_BE,NEXT_FE\" -c \"magenta,cyan\" \"npm run start:dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev": "concurrently -n \"NEST_BE,NEXT_FE\" -c \"magenta,cyan\" \"npm run start:dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "start:prod": "concurrently -n \"NEST_BE,NEXT_FE\" -c \"magenta,cyan\" \"npm run start:prod --prefix backend\" \"npm run start --prefix frontend\"",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
+
