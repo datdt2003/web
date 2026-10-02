@@ -32,10 +32,12 @@ import {
   ShoppingBag,
   Sparkles,
   Tag,
+  Crop,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ethnicGroups, formatVND, products as defaultEthnicProducts } from "@/lib/ethnic-data"
+import { ImageCropperModal } from "@/components/image-cropper-modal"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -210,6 +212,40 @@ export default function AdminPage() {
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
+
+  // Image Cropper Modal State
+  const [cropperModal, setCropperModal] = useState<{
+    isOpen: boolean
+    imageUrl: string
+    title: string
+    aspectRatio?: number
+    onApply: (croppedUrl: string) => void
+  }>({
+    isOpen: false,
+    imageUrl: "",
+    title: "",
+    aspectRatio: 1,
+    onApply: () => {},
+  })
+
+  const openCropper = (
+    imageUrl: string | undefined,
+    title: string,
+    onApply: (croppedUrl: string) => void,
+    aspectRatio = 1
+  ) => {
+    if (!imageUrl) {
+      alert("Vui lòng tải hoặc dán link ảnh trước khi căn chỉnh!")
+      return
+    }
+    setCropperModal({
+      isOpen: true,
+      imageUrl,
+      title,
+      aspectRatio,
+      onApply,
+    })
+  }
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -1451,7 +1487,28 @@ export default function AdminPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Ảnh sản phẩm</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-foreground">Ảnh sản phẩm</label>
+                    {productForm.image && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          openCropper(
+                            productForm.image,
+                            `Căn chỉnh ảnh sản phẩm: ${productForm.name || "Mới"}`,
+                            (newUrl) => setProductForm((prev) => ({ ...prev, image: newUrl })),
+                            1
+                          )
+                        }
+                        className="h-6 gap-1 px-2 text-[11px] font-medium text-primary hover:bg-primary/10"
+                      >
+                        <Crop className="size-3" />
+                        Căn chỉnh ảnh
+                      </Button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 p-3">
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border bg-background">
                       {productForm.image ? (
@@ -1462,8 +1519,27 @@ export default function AdminPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-2">
                       <Input type="file" accept="image/*" onChange={handleProductImageUpload} className="cursor-pointer text-xs" />
+                      {productForm.image && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            openCropper(
+                              productForm.image,
+                              `Căn chỉnh ảnh sản phẩm: ${productForm.name || "Mới"}`,
+                              (newUrl) => setProductForm((prev) => ({ ...prev, image: newUrl })),
+                              1
+                            )
+                          }
+                          className="h-7 text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                        >
+                          <Crop className="size-3.5" />
+                          Căn chỉnh / Cắt cúp ảnh này
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2054,10 +2130,31 @@ export default function AdminPage() {
               {/* PHẦN 1: QUẢN LÝ ẢNH ĐẠI DIỆN                        */}
               {/* ==================================================== */}
               <div className="rounded-xl border border-border bg-muted/20 p-4">
-                <h4 className="flex items-center gap-1.5 text-sm font-bold text-foreground">
-                  <ImageIcon className="size-4 text-primary" />
-                  Ảnh đại diện dân tộc
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                    <ImageIcon className="size-4 text-primary" />
+                    Ảnh đại diện dân tộc
+                  </h4>
+                  {formData.image && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        openCropper(
+                          formData.image,
+                          `Căn chỉnh ảnh đại diện - Dân tộc ${formData.name || ""}`,
+                          (newUrl) => setFormData((prev) => ({ ...prev, image: newUrl })),
+                          4 / 3
+                        )
+                      }
+                      className="h-6 gap-1 px-2 text-[11px] font-medium text-primary hover:bg-primary/10"
+                    >
+                      <Crop className="size-3" />
+                      Căn chỉnh ảnh
+                    </Button>
+                  )}
+                </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-4">
                   {/* Image preview */}
@@ -2103,6 +2200,25 @@ export default function AdminPage() {
                           </>
                         )}
                       </Button>
+                      {formData.image && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            openCropper(
+                              formData.image,
+                              `Căn chỉnh ảnh đại diện - Dân tộc ${formData.name || ""}`,
+                              (newUrl) => setFormData((prev) => ({ ...prev, image: newUrl })),
+                              4 / 3
+                            )
+                          }
+                          className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                        >
+                          <Crop className="size-3.5" />
+                          Căn chỉnh ảnh này
+                        </Button>
+                      )}
                     </div>
 
                     <Input
@@ -2326,7 +2442,28 @@ export default function AdminPage() {
 
                       {/* Ảnh minh họa sản phẩm */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground">Hình ảnh minh họa sản phẩm</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-semibold text-foreground">Hình ảnh minh họa sản phẩm</label>
+                          {ethnicProductForm.image && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                openCropper(
+                                  ethnicProductForm.image,
+                                  `Căn chỉnh ảnh: ${ethnicProductForm.name || "Sản phẩm truyền thống"}`,
+                                  (newUrl) => setEthnicProductForm((prev) => ({ ...prev, image: newUrl })),
+                                  1
+                                )
+                              }
+                              className="h-6 gap-1 px-2 text-[11px] font-medium text-primary hover:bg-primary/10"
+                            >
+                              <Crop className="size-3" />
+                              Căn chỉnh ảnh
+                            </Button>
+                          )}
+                        </div>
                         <div className="flex items-center gap-3">
                           <div className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
                             <Image
@@ -2345,7 +2482,7 @@ export default function AdminPage() {
                               className="hidden"
                               onChange={handleUploadEthnicProdImg}
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button
                                 type="button"
                                 variant="outline"
@@ -2366,6 +2503,25 @@ export default function AdminPage() {
                                   </>
                                 )}
                               </Button>
+                              {ethnicProductForm.image && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openCropper(
+                                      ethnicProductForm.image,
+                                      `Căn chỉnh ảnh: ${ethnicProductForm.name || "Sản phẩm truyền thống"}`,
+                                      (newUrl) => setEthnicProductForm((prev) => ({ ...prev, image: newUrl })),
+                                      1
+                                    )
+                                  }
+                                  className="h-7 text-xs gap-1 border-primary/40 text-primary hover:bg-primary/10"
+                                >
+                                  <Crop className="size-3" />
+                                  Căn chỉnh ảnh
+                                </Button>
+                              )}
                             </div>
                             <Input
                               value={ethnicProductForm.image}
@@ -2776,7 +2932,28 @@ export default function AdminPage() {
 
               {/* Ảnh sản phẩm */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Ảnh sản phẩm *</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground">Ảnh sản phẩm *</label>
+                  {editProductForm.image && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        openCropper(
+                          editProductForm.image,
+                          `Căn chỉnh ảnh sản phẩm: ${editProductForm.name || ""}`,
+                          (newUrl) => setEditProductForm((prev) => ({ ...prev, image: newUrl })),
+                          1
+                        )
+                      }
+                      className="h-6 gap-1 px-2 text-[11px] font-medium text-primary hover:bg-primary/10"
+                    >
+                      <Crop className="size-3" />
+                      Căn chỉnh ảnh
+                    </Button>
+                  )}
+                </div>
                 <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 p-3">
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-background">
                     {editProductForm.image ? (
@@ -2800,25 +2977,46 @@ export default function AdminPage() {
                       className="hidden"
                       onChange={handleEditProductImageUpload}
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={uploadingEditProductImage}
-                      onClick={() => editProductImageInputRef.current?.click()}
-                    >
-                      {uploadingEditProductImage ? (
-                        <>
-                          <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                          Đang tải ảnh lên...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-1.5 size-3.5" />
-                          Chọn ảnh mới từ máy tính
-                        </>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploadingEditProductImage}
+                        onClick={() => editProductImageInputRef.current?.click()}
+                      >
+                        {uploadingEditProductImage ? (
+                          <>
+                            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                            Đang tải ảnh lên...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-1.5 size-3.5" />
+                            Chọn ảnh mới từ máy tính
+                          </>
+                        )}
+                      </Button>
+                      {editProductForm.image && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            openCropper(
+                              editProductForm.image,
+                              `Căn chỉnh ảnh sản phẩm: ${editProductForm.name || ""}`,
+                              (newUrl) => setEditProductForm((prev) => ({ ...prev, image: newUrl })),
+                              1
+                            )
+                          }
+                          className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                        >
+                          <Crop className="size-3.5" />
+                          Căn chỉnh ảnh này
+                        </Button>
                       )}
-                    </Button>
+                    </div>
                     <Input
                       value={editProductForm.image}
                       onChange={(e) => setEditProductForm((prev) => ({ ...prev, image: e.target.value }))}
@@ -2975,6 +3173,20 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Căn chỉnh & Cắt cúp ảnh trực quan */}
+      <ImageCropperModal
+        isOpen={cropperModal.isOpen}
+        imageUrl={cropperModal.imageUrl}
+        title={cropperModal.title}
+        aspectRatio={cropperModal.aspectRatio || 1}
+        backendUrl={BACKEND_URL}
+        onClose={() => setCropperModal((prev) => ({ ...prev, isOpen: false }))}
+        onApply={(newImageUrl) => {
+          cropperModal.onApply(newImageUrl)
+          setToastMessage("Áp dụng căn chỉnh ảnh thành công!")
+        }}
+      />
     </div>
   )
 }
