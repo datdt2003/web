@@ -1,6 +1,10 @@
 # compiled output
 /dist
 /node_modules
+/api/*.js
+/api/*.d.ts
+/api/*.js.map
+
 
 # Logs
 logs
