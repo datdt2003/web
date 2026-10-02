@@ -28,10 +28,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Plus,
+  ShoppingBag,
+  Sparkles,
+  Tag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ethnicGroups, formatVND } from "@/lib/ethnic-data"
+import { ethnicGroups, formatVND, products as defaultEthnicProducts } from "@/lib/ethnic-data"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -184,6 +188,22 @@ export default function AdminPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingVideo, setUploadingVideo] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  // --- Ethnic Traditional Products Management (trong modal sửa dân tộc) ---
+  const [ethnicProductFormOpen, setEthnicProductFormOpen] = useState(false)
+  const [editingEthnicProduct, setEditingEthnicProduct] = useState<ProductItem | null>(null)
+  const [ethnicProductForm, setEthnicProductForm] = useState({
+    name: "",
+    price: "0",
+    category: "Thổ cẩm",
+    image: "",
+    description: "",
+    forSale: false,
+    inStock: true,
+  })
+  const [uploadingEthnicProdImg, setUploadingEthnicProdImg] = useState(false)
+  const [savingEthnicProd, setSavingEthnicProd] = useState(false)
+  const ethnicProdImageInputRef = useRef<HTMLInputElement>(null)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
@@ -593,6 +613,8 @@ export default function AdminPage() {
   // Mở modal sửa dân tộc
   const openEditModal = (ethnic: Ethnic) => {
     setEditingEthnic(ethnic)
+    setEthnicProductFormOpen(false)
+    setEditingEthnicProduct(null)
     const initialRegions: ("bac" | "trung" | "nam")[] =
       ethnic.regions && ethnic.regions.length > 0
         ? [...(ethnic.regions as ("bac" | "trung" | "nam")[])]
@@ -727,6 +749,134 @@ export default function AdminPage() {
       alert("Lỗi khi lưu thông tin. Hãy kiểm tra kết nối với backend.")
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // --- Quản lý sản phẩm truyền thống trong Modal Dân tộc ---
+  const handleOpenAddEthnicProduct = () => {
+    setEditingEthnicProduct(null)
+    setEthnicProductForm({
+      name: "",
+      price: "0",
+      category: "Thổ cẩm",
+      image: "",
+      description: "",
+      forSale: false,
+      inStock: true,
+    })
+    setEthnicProductFormOpen(true)
+  }
+
+  const handleOpenEditEthnicProduct = (prod: ProductItem) => {
+    setEditingEthnicProduct(prod)
+    setEthnicProductForm({
+      name: prod.name,
+      price: String(prod.price),
+      category: prod.category || "Thổ cẩm",
+      image: prod.image || "",
+      description: prod.description || "",
+      forSale: Boolean(prod.forSale),
+      inStock: Boolean(prod.inStock),
+    })
+    setEthnicProductFormOpen(true)
+  }
+
+  const handleUploadEthnicProdImg = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append("file", file)
+    setUploadingEthnicProdImg(true)
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/upload`, {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        setEthnicProductForm((prev) => ({ ...prev, image: data.url }))
+        setToastMessage("Tải ảnh sản phẩm thành công!")
+      } else {
+        alert(data.error || data.message || "Tải ảnh thất bại.")
+      }
+    } catch {
+      alert("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối backend.")
+    } finally {
+      setUploadingEthnicProdImg(false)
+      e.target.value = ""
+    }
+  }
+
+  const handleSaveEthnicProduct = async () => {
+    if (!editingEthnic) return
+    if (!ethnicProductForm.name.trim()) {
+      alert("Vui lòng nhập tên sản phẩm truyền thống.")
+      return
+    }
+
+    setSavingEthnicProd(true)
+    try {
+      const payload = {
+        name: ethnicProductForm.name.trim(),
+        price: Number(ethnicProductForm.price) || 0,
+        image: ethnicProductForm.image.trim() || "/placeholder.svg",
+        ethnicSlug: editingEthnic.slug,
+        category: ethnicProductForm.category || "Thủ công",
+        description: ethnicProductForm.description.trim(),
+        forSale: Boolean(ethnicProductForm.forSale),
+        inStock: Boolean(ethnicProductForm.inStock),
+      }
+
+      if (editingEthnicProduct) {
+        // Cập nhật sản phẩm
+        const res = await fetch(`/api/products/${editingEthnicProduct.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Không thể cập nhật sản phẩm.")
+        setProducts((prev) =>
+          prev.map((p) => (p.id === editingEthnicProduct.id ? { ...p, ...payload } : p))
+        )
+        setToastMessage(`Đã cập nhật sản phẩm "${payload.name}"!`)
+      } else {
+        // Tạo sản phẩm mới
+        const res = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...payload,
+            id: slugify(payload.name || `sp-${Date.now()}`),
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Không thể tạo sản phẩm.")
+        setProducts((prev) => [data.data, ...prev])
+        setToastMessage(`Đã thêm sản phẩm "${payload.name}" cho dân tộc ${editingEthnic.name}!`)
+      }
+
+      setEthnicProductFormOpen(false)
+      setEditingEthnicProduct(null)
+    } catch (err: any) {
+      alert(err.message || "Lỗi khi lưu sản phẩm.")
+    } finally {
+      setSavingEthnicProd(false)
+    }
+  }
+
+  const handleDeleteEthnicProduct = async (prod: ProductItem) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${prod.name}" của dân tộc ${editingEthnic?.name}?`)) return
+    try {
+      const res = await fetch(`/api/products/${prod.id}`, { method: "DELETE" })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Không thể xóa sản phẩm.")
+      }
+      setProducts((prev) => prev.filter((p) => p.id !== prod.id))
+      setToastMessage(`Đã xóa sản phẩm "${prod.name}" thành công!`)
+    } catch (err: any) {
+      alert(err.message || "Không thể xóa sản phẩm.")
     }
   }
 
@@ -2048,6 +2198,372 @@ export default function AdminPage() {
                     className="text-xs"
                   />
                 </div>
+              </div>
+
+              {/* ==================================================== */}
+              {/* PHẦN 3: SẢN PHẨM TRUYỀN THỐNG & DI SẢN THỦ CÔNG       */}
+              {/* ==================================================== */}
+              <div className="rounded-xl border border-border bg-muted/20 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+                  <div>
+                    <h4 className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                      <ShoppingBag className="size-4 text-primary" />
+                      Sản phẩm truyền thống &amp; Di sản thủ công
+                    </h4>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Các sản phẩm đặc trưng của dân tộc {editingEthnic.name} (hiển thị trên trang chi tiết dân tộc)
+                    </p>
+                  </div>
+
+                  {!ethnicProductFormOpen && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenAddEthnicProduct}
+                      className="h-8 gap-1.5 border-primary/30 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
+                    >
+                      <Plus className="size-3.5" />
+                      Thêm sản phẩm truyền thống
+                    </Button>
+                  )}
+                </div>
+
+                {/* Form thêm / sửa sản phẩm truyền thống inline */}
+                {ethnicProductFormOpen && (
+                  <div className="mt-4 rounded-xl border border-primary/30 bg-card p-4 shadow-sm animate-in fade-in-50">
+                    <div className="flex items-center justify-between border-b border-border pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="grid size-6 place-items-center rounded-md bg-primary/10 text-primary">
+                          <Sparkles className="size-3.5" />
+                        </span>
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-primary">
+                          {editingEthnicProduct
+                            ? `Chỉnh sửa: ${editingEthnicProduct.name}`
+                            : "Thêm sản phẩm truyền thống mới"}
+                        </h5>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEthnicProductFormOpen(false)
+                          setEditingEthnicProduct(null)
+                        }}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-4 space-y-4">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1 sm:col-span-2">
+                          <label className="text-xs font-semibold text-foreground">
+                            Tên sản phẩm truyền thống <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            value={ethnicProductForm.name}
+                            onChange={(e) =>
+                              setEthnicProductForm((prev) => ({ ...prev, name: e.target.value }))
+                            }
+                            placeholder="Ví dụ: Khăn thổ cẩm thêu tay, Khèn Mông, Đàn tính..."
+                            className="h-8 text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-semibold text-foreground">Phân loại</label>
+                          <select
+                            value={ethnicProductForm.category}
+                            onChange={(e) =>
+                              setEthnicProductForm((prev) => ({ ...prev, category: e.target.value }))
+                            }
+                            className="h-8 w-full rounded-md border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                          >
+                            <option value="Thổ cẩm">Thổ cẩm</option>
+                            <option value="Nhạc cụ">Nhạc cụ</option>
+                            <option value="Trang phục">Trang phục</option>
+                            <option value="Gốm sứ">Gốm sứ</option>
+                            <option value="Thủ công">Thủ công</option>
+                            <option value="Đặc sản">Đặc sản</option>
+                            <option value="Trang sức">Trang sức</option>
+                            <option value="Di sản thủ công">Di sản thủ công</option>
+                            <option value="Khác">Khác</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-semibold text-foreground">
+                            Giá bán / Giá tham khảo (VNĐ)
+                          </label>
+                          <Input
+                            type="number"
+                            value={ethnicProductForm.price}
+                            onChange={(e) =>
+                              setEthnicProductForm((prev) => ({ ...prev, price: e.target.value }))
+                            }
+                            placeholder="0 nếu là di sản phi thương mại"
+                            className="h-8 text-xs"
+                          />
+                          <p className="text-[10px] text-muted-foreground">
+                            Nhập 0đ nếu sản phẩm chỉ dùng để trưng bày di sản, không mở bán.
+                          </p>
+                        </div>
+
+                        <div className="space-y-2 pt-4">
+                          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={ethnicProductForm.forSale}
+                              onChange={(e) =>
+                                setEthnicProductForm((prev) => ({ ...prev, forSale: e.target.checked }))
+                              }
+                              className="size-4 rounded border-border text-primary focus:ring-primary"
+                            />
+                            <span>Đăng bán trên Cửa hàng (Cho phép khách mua)</span>
+                          </label>
+
+                          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={ethnicProductForm.inStock}
+                              onChange={(e) =>
+                                setEthnicProductForm((prev) => ({ ...prev, inStock: e.target.checked }))
+                              }
+                              className="size-4 rounded border-border text-primary focus:ring-primary"
+                            />
+                            <span>Còn hàng trong kho</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Ảnh sản phẩm */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Hình ảnh sản phẩm</label>
+                        <div className="flex items-center gap-3">
+                          <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                            <Image
+                              src={ethnicProductForm.image || "/placeholder.svg"}
+                              alt="Ảnh sản phẩm"
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 space-y-1.5">
+                            <input
+                              type="file"
+                              ref={ethnicProdImageInputRef}
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleUploadEthnicProdImg}
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={uploadingEthnicProdImg}
+                                onClick={() => ethnicProdImageInputRef.current?.click()}
+                                className="h-7 text-xs"
+                              >
+                                {uploadingEthnicProdImg ? (
+                                  <>
+                                    <Loader2 className="mr-1 size-3 animate-spin" />
+                                    Đang tải ảnh...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="mr-1 size-3" />
+                                    Tải ảnh từ máy
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                            <Input
+                              value={ethnicProductForm.image}
+                              onChange={(e) =>
+                                setEthnicProductForm((prev) => ({ ...prev, image: e.target.value }))
+                              }
+                              placeholder="Hoặc dán URL ảnh (/images/... hoặc https://...)"
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mô tả sản phẩm */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">Mô tả / Ý nghĩa văn hóa</label>
+                        <textarea
+                          value={ethnicProductForm.description}
+                          onChange={(e) =>
+                            setEthnicProductForm((prev) => ({ ...prev, description: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder="Mô tả kỹ thuật chế tác, nguồn gốc, ý nghĩa trong đời sống văn hóa..."
+                          className="w-full rounded-md border border-border bg-background p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+
+                      {/* Nút lưu sản phẩm */}
+                      <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEthnicProductFormOpen(false)
+                            setEditingEthnicProduct(null)
+                          }}
+                          className="h-8 text-xs"
+                        >
+                          Hủy
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={savingEthnicProd}
+                          onClick={handleSaveEthnicProduct}
+                          className="h-8 gap-1.5 bg-primary text-xs text-primary-foreground"
+                        >
+                          {savingEthnicProd ? (
+                            <>
+                              <Loader2 className="size-3 animate-spin" />
+                              Đang lưu...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="size-3" />
+                              {editingEthnicProduct ? "Cập nhật sản phẩm" : "Lưu sản phẩm mới"}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Danh sách các sản phẩm truyền thống hiện có */}
+                {(() => {
+                  const dbMatches = products.filter((p) => p.ethnicSlug === editingEthnic.slug)
+                  const staticMatches = defaultEthnicProducts.filter((p) => p.ethnicSlug === editingEthnic.slug)
+                  const currentList = dbMatches.length > 0 ? dbMatches : staticMatches
+
+                  if (currentList.length === 0) {
+                    return (
+                      <div className="mt-3 rounded-lg border border-dashed border-border bg-muted/40 p-4 text-center">
+                        <ShoppingBag className="mx-auto size-8 text-muted-foreground/60" />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Dân tộc này chưa có sản phẩm truyền thống nào. Bạn có thể bấm &quot;Thêm sản phẩm truyền thống&quot; ở trên để tạo mới.
+                        </p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                      {currentList.map((p) => (
+                        <div
+                          key={p.id}
+                          className="group flex items-start gap-3 rounded-xl border border-border bg-card p-2.5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+                        >
+                          <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                            <Image
+                              src={p.image || "/placeholder.svg"}
+                              alt={p.name}
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                            />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-1">
+                              <h5 className="truncate font-semibold text-xs text-foreground" title={p.name}>
+                                {p.name}
+                              </h5>
+                              <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                                {p.category}
+                              </span>
+                            </div>
+
+                            <p className="mt-0.5 text-xs font-bold text-primary">
+                              {Number(p.price) > 0 ? formatVND(Number(p.price)) : "Di sản trưng bày"}
+                            </p>
+
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <span
+                                className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${
+                                  p.forSale
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {p.forSale ? "🛒 Mở bán" : "🏛️ Di sản"}
+                              </span>
+                            </div>
+
+                            {p.description && (
+                              <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
+                                {p.description}
+                              </p>
+                            )}
+
+                            <div className="mt-2 flex items-center justify-end gap-1.5 border-t border-border/50 pt-1.5">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleOpenEditEthnicProduct({
+                                    id: p.id,
+                                    name: p.name,
+                                    price: Number(p.price) || 0,
+                                    image: p.image || "/placeholder.svg",
+                                    ethnicSlug: p.ethnicSlug,
+                                    category: p.category || "Thủ công",
+                                    description: p.description || "",
+                                    forSale: Boolean(p.forSale),
+                                    inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
+                                  })
+                                }
+                                className="h-6 gap-1 px-2 text-[10px] font-medium text-primary hover:bg-primary/10"
+                              >
+                                <Edit className="size-2.5" />
+                                Sửa
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteEthnicProduct({
+                                    id: p.id,
+                                    name: p.name,
+                                    price: Number(p.price) || 0,
+                                    image: p.image || "/placeholder.svg",
+                                    ethnicSlug: p.ethnicSlug,
+                                    category: p.category || "Thủ công",
+                                    forSale: Boolean(p.forSale),
+                                    inStock: Boolean(p.inStock),
+                                  })
+                                }
+                                className="h-6 gap-1 px-2 text-[10px] font-medium text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="size-2.5" />
+                                Xóa
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Action buttons */}

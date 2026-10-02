@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { VideoPlayer } from "@/components/video-player"
 import { connectDB } from "@/lib/mongodb"
 import { Ethnic } from "@/models/Ethnic"
+import { Product } from "@/models/Product"
 import { ProductCard } from "@/components/product-card"
 import { EthnicCard } from "@/components/ethnic-card"
 import {
@@ -54,10 +55,23 @@ export default async function EthnicDetailPage({
     console.error("Load ethnic page data error:", error)
   }
 
-  // Chỉ hiển thị sản phẩm thông tin (không bán hàng) trên trang dân tộc
-  let displayProducts = productsForEthnic(ethnic.slug).filter(p => !p.forSale)
+  // Lấy sản phẩm thuộc dân tộc từ cơ sở dữ liệu, nếu không có thì fallback sang dữ liệu mẫu
+  let displayProducts: any[] = []
+  try {
+    await connectDB()
+    const dbProducts = await Product.find({ ethnicSlug: ethnic.slug }).lean()
+    if (dbProducts && dbProducts.length > 0) {
+      displayProducts = dbProducts
+    }
+  } catch (error) {
+    console.error("Load ethnic products from DB error:", error)
+  }
 
-  // Nếu không có sản phẩm thông tin, tạo sản phẩm mặc định
+  if (displayProducts.length === 0) {
+    displayProducts = productsForEthnic(ethnic.slug)
+  }
+
+  // Nếu vẫn không có sản phẩm nào, tạo sản phẩm di sản mặc định
   if (displayProducts.length === 0) {
     const traditionalName = ethnic.culture[0] || "Nghề thủ công"
     displayProducts = [

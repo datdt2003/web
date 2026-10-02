@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb"
 import { Product } from "@/models/Product"
 import { getUserFromRequest } from "@/lib/auth"
 import { publishRealtimeEvent } from "@/lib/realtime"
+import { products as staticProducts } from "@/lib/ethnic-data"
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,18 +19,30 @@ export async function GET(request: NextRequest) {
 
     const products = await Product.find(filter).lean()
 
-    return NextResponse.json({
-      success: true,
-      count: products.length,
-      data: products,
-    })
+    if (products && products.length > 0) {
+      return NextResponse.json({
+        success: true,
+        count: products.length,
+        data: products,
+      })
+    }
   } catch (error: any) {
-    console.error("Get products error:", error)
-    return NextResponse.json(
-      { error: "Không thể lấy danh sách sản phẩm." },
-      { status: 500 }
-    )
+    console.error("Get products error, falling back:", error)
   }
+
+  // Fallback sang dữ liệu sản phẩm tĩnh chuẩn
+  let fallbackProducts = [...staticProducts]
+  const { searchParams } = new URL(request.url)
+  const ethnicSlug = searchParams.get("ethnicSlug")
+  const category = searchParams.get("category")
+  if (ethnicSlug) fallbackProducts = fallbackProducts.filter((p) => p.ethnicSlug === ethnicSlug)
+  if (category) fallbackProducts = fallbackProducts.filter((p) => p.category === category)
+
+  return NextResponse.json({
+    success: true,
+    count: fallbackProducts.length,
+    data: fallbackProducts,
+  })
 }
 
 export async function POST(request: NextRequest) {
