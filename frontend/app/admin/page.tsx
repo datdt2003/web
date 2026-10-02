@@ -96,6 +96,9 @@ interface ProductItem {
   ethnicSlug: string
   category: string
   description?: string
+  origin?: string
+  craft?: string
+  culturalValue?: string
   forSale: boolean
   inStock: boolean
   createdAt?: string
@@ -194,12 +197,12 @@ export default function AdminPage() {
   const [editingEthnicProduct, setEditingEthnicProduct] = useState<ProductItem | null>(null)
   const [ethnicProductForm, setEthnicProductForm] = useState({
     name: "",
-    price: "0",
-    category: "Thổ cẩm",
+    category: "",
     image: "",
+    origin: "",
+    craft: "",
+    culturalValue: "",
     description: "",
-    forSale: false,
-    inStock: true,
   })
   const [uploadingEthnicProdImg, setUploadingEthnicProdImg] = useState(false)
   const [savingEthnicProd, setSavingEthnicProd] = useState(false)
@@ -757,12 +760,12 @@ export default function AdminPage() {
     setEditingEthnicProduct(null)
     setEthnicProductForm({
       name: "",
-      price: "0",
-      category: "Thổ cẩm",
+      category: "",
       image: "",
+      origin: "",
+      craft: "",
+      culturalValue: "",
       description: "",
-      forSale: false,
-      inStock: true,
     })
     setEthnicProductFormOpen(true)
   }
@@ -771,12 +774,12 @@ export default function AdminPage() {
     setEditingEthnicProduct(prod)
     setEthnicProductForm({
       name: prod.name,
-      price: String(prod.price),
-      category: prod.category || "Thổ cẩm",
+      category: prod.category || "",
       image: prod.image || "",
+      origin: prod.origin || "",
+      craft: prod.craft || "",
+      culturalValue: prod.culturalValue || "",
       description: prod.description || "",
-      forSale: Boolean(prod.forSale),
-      inStock: Boolean(prod.inStock),
     })
     setEthnicProductFormOpen(true)
   }
@@ -818,13 +821,16 @@ export default function AdminPage() {
     try {
       const payload = {
         name: ethnicProductForm.name.trim(),
-        price: Number(ethnicProductForm.price) || 0,
+        category: ethnicProductForm.category.trim() || "Thủ công truyền thống",
         image: ethnicProductForm.image.trim() || "/placeholder.svg",
         ethnicSlug: editingEthnic.slug,
-        category: ethnicProductForm.category || "Thủ công",
+        origin: ethnicProductForm.origin.trim(),
+        craft: ethnicProductForm.craft.trim(),
+        culturalValue: ethnicProductForm.culturalValue.trim(),
         description: ethnicProductForm.description.trim(),
-        forSale: Boolean(ethnicProductForm.forSale),
-        inStock: Boolean(ethnicProductForm.inStock),
+        price: 0,
+        forSale: false,
+        inStock: true,
       }
 
       if (editingEthnicProduct) {
@@ -839,7 +845,7 @@ export default function AdminPage() {
         setProducts((prev) =>
           prev.map((p) => (p.id === editingEthnicProduct.id ? { ...p, ...payload } : p))
         )
-        setToastMessage(`Đã cập nhật sản phẩm "${payload.name}"!`)
+        setToastMessage(`Đã cập nhật thông tin sản phẩm "${payload.name}"!`)
       } else {
         // Tạo sản phẩm mới
         const res = await fetch("/api/products", {
@@ -2256,8 +2262,9 @@ export default function AdminPage() {
                     </div>
 
                     <div className="mt-4 space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="space-y-1 sm:col-span-2">
+                      {/* Tên & Phân loại (cho nhập tự do) */}
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
                           <label className="text-xs font-semibold text-foreground">
                             Tên sản phẩm truyền thống <span className="text-destructive">*</span>
                           </label>
@@ -2266,89 +2273,67 @@ export default function AdminPage() {
                             onChange={(e) =>
                               setEthnicProductForm((prev) => ({ ...prev, name: e.target.value }))
                             }
-                            placeholder="Ví dụ: Khăn thổ cẩm thêu tay, Khèn Mông, Đàn tính..."
+                            placeholder="Ví dụ: Khăn piêu thêu tay, Khèn Mông, Đàn tính, Gốm Bàu Trúc..."
                             className="h-8 text-xs"
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-foreground">Phân loại</label>
-                          <select
-                            value={ethnicProductForm.category}
-                            onChange={(e) =>
-                              setEthnicProductForm((prev) => ({ ...prev, category: e.target.value }))
-                            }
-                            className="h-8 w-full rounded-md border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                          >
-                            <option value="Thổ cẩm">Thổ cẩm</option>
-                            <option value="Nhạc cụ">Nhạc cụ</option>
-                            <option value="Trang phục">Trang phục</option>
-                            <option value="Gốm sứ">Gốm sứ</option>
-                            <option value="Thủ công">Thủ công</option>
-                            <option value="Đặc sản">Đặc sản</option>
-                            <option value="Trang sức">Trang sức</option>
-                            <option value="Di sản thủ công">Di sản thủ công</option>
-                            <option value="Khác">Khác</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
                           <label className="text-xs font-semibold text-foreground">
-                            Giá bán / Giá tham khảo (VNĐ)
+                            Phân loại sản phẩm (nhập tự do) <span className="text-destructive">*</span>
                           </label>
-                          <Input
-                            type="number"
-                            value={ethnicProductForm.price}
-                            onChange={(e) =>
-                              setEthnicProductForm((prev) => ({ ...prev, price: e.target.value }))
-                            }
-                            placeholder="0 nếu là di sản phi thương mại"
-                            className="h-8 text-xs"
-                          />
-                          <p className="text-[10px] text-muted-foreground">
-                            Nhập 0đ nếu sản phẩm chỉ dùng để trưng bày di sản, không mở bán.
-                          </p>
-                        </div>
-
-                        <div className="space-y-2 pt-4">
-                          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-foreground">
-                            <input
-                              type="checkbox"
-                              checked={ethnicProductForm.forSale}
+                          <div className="space-y-1.5">
+                            <Input
+                              value={ethnicProductForm.category}
                               onChange={(e) =>
-                                setEthnicProductForm((prev) => ({ ...prev, forSale: e.target.checked }))
+                                setEthnicProductForm((prev) => ({ ...prev, category: e.target.value }))
                               }
-                              className="size-4 rounded border-border text-primary focus:ring-primary"
+                              placeholder="Nhập loại: Thổ cẩm, Nhạc cụ, Trang phục, Gốm sứ, Đan lát..."
+                              className="h-8 text-xs"
+                              list="craft-categories"
                             />
-                            <span>Đăng bán trên Cửa hàng (Cho phép khách mua)</span>
-                          </label>
-
-                          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-foreground">
-                            <input
-                              type="checkbox"
-                              checked={ethnicProductForm.inStock}
-                              onChange={(e) =>
-                                setEthnicProductForm((prev) => ({ ...prev, inStock: e.target.checked }))
-                              }
-                              className="size-4 rounded border-border text-primary focus:ring-primary"
-                            />
-                            <span>Còn hàng trong kho</span>
-                          </label>
+                            <datalist id="craft-categories">
+                              <option value="Thổ cẩm" />
+                              <option value="Nhạc cụ" />
+                              <option value="Trang phục" />
+                              <option value="Gốm sứ" />
+                              <option value="Thủ công mỹ nghệ" />
+                              <option value="Nghề đan lát" />
+                              <option value="Đặc sản truyền thống" />
+                              <option value="Trang sức dân tộc" />
+                              <option value="Nông cụ truyền thống" />
+                            </datalist>
+                            {/* Gợi ý chọn nhanh */}
+                            <div className="flex flex-wrap gap-1">
+                              {["Thổ cẩm", "Nhạc cụ", "Trang phục", "Gốm sứ", "Đồ thủ công", "Đan lát", "Đặc sản", "Trang sức"].map((cat) => (
+                                <button
+                                  key={cat}
+                                  type="button"
+                                  onClick={() => setEthnicProductForm((prev) => ({ ...prev, category: cat }))}
+                                  className={`rounded px-1.5 py-0.5 text-[10px] transition-colors ${
+                                    ethnicProductForm.category === cat
+                                      ? "bg-primary text-primary-foreground font-semibold"
+                                      : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                                  }`}
+                                >
+                                  {cat}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Ảnh sản phẩm */}
+                      {/* Ảnh minh họa sản phẩm */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground">Hình ảnh sản phẩm</label>
+                        <label className="text-xs font-semibold text-foreground">Hình ảnh minh họa sản phẩm</label>
                         <div className="flex items-center gap-3">
-                          <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                          <div className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
                             <Image
                               src={ethnicProductForm.image || "/placeholder.svg"}
                               alt="Ảnh sản phẩm"
                               fill
-                              sizes="56px"
+                              sizes="64px"
                               className="object-cover"
                             />
                           </div>
@@ -2377,7 +2362,7 @@ export default function AdminPage() {
                                 ) : (
                                   <>
                                     <Upload className="mr-1 size-3" />
-                                    Tải ảnh từ máy
+                                    Tải ảnh từ máy tính
                                   </>
                                 )}
                               </Button>
@@ -2394,16 +2379,65 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Mô tả sản phẩm */}
+                      {/* Nguồn gốc & Xuất xứ */}
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-foreground">Mô tả / Ý nghĩa văn hóa</label>
+                        <label className="text-xs font-semibold text-foreground">
+                          Nguồn gốc &amp; Địa bàn xuất xứ
+                        </label>
+                        <Input
+                          value={ethnicProductForm.origin}
+                          onChange={(e) =>
+                            setEthnicProductForm((prev) => ({ ...prev, origin: e.target.value }))
+                          }
+                          placeholder="Ví dụ: Các bản làng H'Mông vùng núi phía Bắc (Hà Giang, Lào Cai, Lai Châu...)"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+
+                      {/* Chất liệu & Kỹ thuật chế tác */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">
+                          Chất liệu &amp; Kỹ thuật chế tác thủ công
+                        </label>
+                        <textarea
+                          value={ethnicProductForm.craft}
+                          onChange={(e) =>
+                            setEthnicProductForm((prev) => ({ ...prev, craft: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder="Ví dụ: Vải lanh dệt thủ công trên khung cửi cổ truyền, nhuộm chàm tự nhiên và thêu tay tỉ mỉ bằng sáp ong..."
+                          className="w-full rounded-md border border-border bg-background p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+
+                      {/* Giá trị văn hóa & Đời sống */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">
+                          Giá trị văn hóa &amp; Ý nghĩa đời sống
+                        </label>
+                        <textarea
+                          value={ethnicProductForm.culturalValue}
+                          onChange={(e) =>
+                            setEthnicProductForm((prev) => ({ ...prev, culturalValue: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder="Ví dụ: Là biểu tượng nhận diện văn hóa dân tộc, gắn liền với lễ hội mùa xuân, phong tục cưới hỏi và truyền thống..."
+                          className="w-full rounded-md border border-border bg-background p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+
+                      {/* Giới thiệu chi tiết (để người đọc tìm hiểu) */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">
+                          Nội dung giới thiệu chi tiết (để người đọc tìm hiểu)
+                        </label>
                         <textarea
                           value={ethnicProductForm.description}
                           onChange={(e) =>
                             setEthnicProductForm((prev) => ({ ...prev, description: e.target.value }))
                           }
-                          rows={2}
-                          placeholder="Mô tả kỹ thuật chế tác, nguồn gốc, ý nghĩa trong đời sống văn hóa..."
+                          rows={3}
+                          placeholder="Bài viết thông tin chi tiết về sản phẩm, lịch sử hình thành, quy trình làm ra sản phẩm..."
                           className="w-full rounded-md border border-border bg-background p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </div>
@@ -2437,7 +2471,7 @@ export default function AdminPage() {
                           ) : (
                             <>
                               <Check className="size-3" />
-                              {editingEthnicProduct ? "Cập nhật sản phẩm" : "Lưu sản phẩm mới"}
+                              {editingEthnicProduct ? "Cập nhật thông tin" : "Lưu thông tin sản phẩm"}
                             </>
                           )}
                         </Button>
@@ -2446,7 +2480,7 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* Danh sách các sản phẩm truyền thống hiện có */}
+                {/* Danh sách các sản phẩm truyền thống hiện có (chỉ để đọc và giới thiệu) */}
                 {(() => {
                   const dbMatches = products.filter((p) => p.ethnicSlug === editingEthnic.slug)
                   const staticMatches = defaultEthnicProducts.filter((p) => p.ethnicSlug === editingEthnic.slug)
@@ -2457,7 +2491,7 @@ export default function AdminPage() {
                       <div className="mt-3 rounded-lg border border-dashed border-border bg-muted/40 p-4 text-center">
                         <ShoppingBag className="mx-auto size-8 text-muted-foreground/60" />
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Dân tộc này chưa có sản phẩm truyền thống nào. Bạn có thể bấm &quot;Thêm sản phẩm truyền thống&quot; ở trên để tạo mới.
+                          Dân tộc này chưa có thông tin sản phẩm truyền thống nào. Bạn có thể bấm &quot;Thêm sản phẩm truyền thống&quot; ở trên để đăng bài giới thiệu.
                         </p>
                       </div>
                     )
@@ -2468,51 +2502,54 @@ export default function AdminPage() {
                       {currentList.map((p) => (
                         <div
                           key={p.id}
-                          className="group flex items-start gap-3 rounded-xl border border-border bg-card p-2.5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+                          className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
                         >
-                          <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                          <div className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
                             <Image
                               src={p.image || "/placeholder.svg"}
                               alt={p.name}
                               fill
-                              sizes="56px"
+                              sizes="64px"
                               className="object-cover"
                             />
                           </div>
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-1">
-                              <h5 className="truncate font-semibold text-xs text-foreground" title={p.name}>
+                              <h5 className="truncate font-bold text-xs text-foreground" title={p.name}>
                                 {p.name}
                               </h5>
-                              <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                              <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                                 {p.category}
                               </span>
                             </div>
 
-                            <p className="mt-0.5 text-xs font-bold text-primary">
-                              {Number(p.price) > 0 ? formatVND(Number(p.price)) : "Di sản trưng bày"}
-                            </p>
+                            {p.origin && (
+                              <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                                <MapPin className="size-3 shrink-0 text-primary" />
+                                <span className="truncate">{p.origin}</span>
+                              </p>
+                            )}
 
-                            <div className="mt-1 flex items-center gap-1.5">
-                              <span
-                                className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${
-                                  p.forSale
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                {p.forSale ? "🛒 Mở bán" : "🏛️ Di sản"}
-                              </span>
-                            </div>
-
-                            {p.description && (
+                            {p.craft && (
                               <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
+                                <span className="font-medium text-foreground">Kỹ thuật:</span> {p.craft}
+                              </p>
+                            )}
+
+                            {p.culturalValue && (
+                              <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
+                                <span className="font-medium text-foreground">Ý nghĩa:</span> {p.culturalValue}
+                              </p>
+                            )}
+
+                            {p.description && !p.craft && !p.culturalValue && (
+                              <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
                                 {p.description}
                               </p>
                             )}
 
-                            <div className="mt-2 flex items-center justify-end gap-1.5 border-t border-border/50 pt-1.5">
+                            <div className="mt-2.5 flex items-center justify-end gap-1.5 border-t border-border/50 pt-2">
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -2521,19 +2558,22 @@ export default function AdminPage() {
                                   handleOpenEditEthnicProduct({
                                     id: p.id,
                                     name: p.name,
-                                    price: Number(p.price) || 0,
+                                    price: 0,
                                     image: p.image || "/placeholder.svg",
                                     ethnicSlug: p.ethnicSlug,
                                     category: p.category || "Thủ công",
                                     description: p.description || "",
-                                    forSale: Boolean(p.forSale),
-                                    inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
+                                    origin: p.origin || "",
+                                    craft: p.craft || "",
+                                    culturalValue: p.culturalValue || "",
+                                    forSale: false,
+                                    inStock: true,
                                   })
                                 }
                                 className="h-6 gap-1 px-2 text-[10px] font-medium text-primary hover:bg-primary/10"
                               >
                                 <Edit className="size-2.5" />
-                                Sửa
+                                Chỉnh sửa thông tin
                               </Button>
 
                               <Button
@@ -2544,12 +2584,12 @@ export default function AdminPage() {
                                   handleDeleteEthnicProduct({
                                     id: p.id,
                                     name: p.name,
-                                    price: Number(p.price) || 0,
+                                    price: 0,
                                     image: p.image || "/placeholder.svg",
                                     ethnicSlug: p.ethnicSlug,
                                     category: p.category || "Thủ công",
-                                    forSale: Boolean(p.forSale),
-                                    inStock: Boolean(p.inStock),
+                                    forSale: false,
+                                    inStock: true,
                                   })
                                 }
                                 className="h-6 gap-1 px-2 text-[10px] font-medium text-destructive hover:bg-destructive/10"

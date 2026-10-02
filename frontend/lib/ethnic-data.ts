@@ -724,6 +724,9 @@ export interface Product {
   ethnicSlug: string
   category: string
   description?: string
+  origin?: string
+  craft?: string
+  culturalValue?: string
   forSale?: boolean
   inStock?: boolean
 }
@@ -768,6 +771,15 @@ const productDetails: Record<string, { origin: string; craft: string; culturalVa
 }
 
 export function getProductDetails(product: Product) {
+  if (product.origin || product.craft || product.culturalValue) {
+    const ethnic = ethnicGroups.find((group) => group.slug === product.ethnicSlug)
+    return {
+      origin: product.origin || (ethnic ? `Gắn với đời sống và nghề thủ công của cộng đồng ${ethnic.name}.` : "Gắn với đời sống văn hóa truyền thống của cộng đồng."),
+      craft: product.craft || `Sản phẩm thuộc nhóm ${product.category.toLowerCase()}, được tạo nên từ kỹ thuật thủ công và kinh nghiệm truyền đời.`,
+      culturalValue: product.culturalValue || product.description || (ethnic ? `${ethnic.culture.join(", ")}. ${ethnic.detail}` : "Sản phẩm phản ánh kỹ năng và bản sắc văn hóa địa phương."),
+    }
+  }
+
   if (productDetails[product.id]) return productDetails[product.id]
 
   const ethnic = ethnicGroups.find((group) => group.slug === product.ethnicSlug)

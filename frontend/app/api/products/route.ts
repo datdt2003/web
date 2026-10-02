@@ -59,11 +59,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    let { id, name, price, image, ethnicSlug, category, description, forSale, inStock } = body
+    let { id, name, price, image, ethnicSlug, category, description, origin, craft, culturalValue, forSale, inStock } = body
 
-    if (!name || price === undefined || price === null || price === "") {
+    if (!name) {
       return NextResponse.json(
-        { error: "Vui lòng điền đầy đủ tên sản phẩm và giá bán." },
+        { error: "Vui lòng điền tên sản phẩm." },
         { status: 400 }
       )
     }
@@ -84,12 +84,15 @@ export async function POST(request: NextRequest) {
     const product = await Product.create({
       id: finalId,
       name: String(name).trim(),
-      price: Number(price),
+      price: price !== undefined && price !== null && price !== "" ? Number(price) : 0,
       image: image?.trim() || "/placeholder.svg",
       ethnicSlug: ethnicSlug?.trim() || "Chung",
       category: category?.trim() || "Thủ công",
       description: description?.trim() || "",
-      forSale: forSale !== undefined ? Boolean(forSale) : true,
+      origin: origin?.trim() || "",
+      craft: craft?.trim() || "",
+      culturalValue: culturalValue?.trim() || "",
+      forSale: forSale !== undefined ? Boolean(forSale) : false,
       inStock: inStock !== undefined ? Boolean(inStock) : true,
     })
 

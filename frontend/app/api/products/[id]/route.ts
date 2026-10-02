@@ -64,6 +64,9 @@ export async function PUT(
       "ethnicSlug",
       "category",
       "description",
+      "origin",
+      "craft",
+      "culturalValue",
       "forSale",
       "inStock",
     ]) {

@@ -11,7 +11,7 @@ export class Product {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   price: number;
 
   @Prop({ required: true })
@@ -25,6 +25,15 @@ export class Product {
 
   @Prop()
   description?: string;
+
+  @Prop()
+  origin?: string;
+
+  @Prop()
+  craft?: string;
+
+  @Prop()
+  culturalValue?: string;
 
   @Prop({ default: false })
   forSale: boolean;
