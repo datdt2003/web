@@ -2,9 +2,9 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MapPin, ChevronRight } from "lucide-react"
-import { regions, ethnicGroups, regionsForEthnic, type RegionId } from "@/lib/ethnic-data"
+import { regions, ethnicGroups, regionsForEthnic, type RegionId, type Ethnic } from "@/lib/ethnic-data"
 import { cn } from "@/lib/utils"
 
 const markers: Record<RegionId, { top: string; left: string }> = {
@@ -13,12 +13,30 @@ const markers: Record<RegionId, { top: string; left: string }> = {
   nam: { top: "70%", left: "52%" },
 }
 
-function countFor(id: RegionId) {
-  return ethnicGroups.filter((e) => regionsForEthnic(e).includes(id)).length
-}
-
-export function VietnamMap() {
+export function VietnamMap({ ethnics: propEthnics }: { ethnics?: Ethnic[] }) {
+  const [ethnics, setEthnics] = useState<Ethnic[]>(propEthnics || ethnicGroups)
   const [active, setActive] = useState<RegionId | null>(null)
+
+  useEffect(() => {
+    if (propEthnics && propEthnics.length > 0) {
+      setEthnics(propEthnics)
+    }
+  }, [propEthnics])
+
+  useEffect(() => {
+    fetch("/api/ethnic")
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData?.success && Array.isArray(resData.data) && resData.data.length > 0) {
+          setEthnics(resData.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  function countFor(id: RegionId) {
+    return ethnics.filter((e) => regionsForEthnic(e).includes(id)).length
+  }
 
   return (
     <div className="grid items-center gap-8 lg:grid-cols-2">

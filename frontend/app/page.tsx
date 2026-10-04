@@ -5,8 +5,13 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { SectionHeading } from "@/components/section-heading"
 import { EthnicCard } from "@/components/ethnic-card"
 import { VietnamMap } from "@/components/vietnam-map"
-import { ethnicGroups } from "@/lib/ethnic-data"
+import { connectDB } from "@/lib/mongodb"
+import { Ethnic } from "@/models/Ethnic"
+import { ethnicGroups, type Ethnic as EthnicType } from "@/lib/ethnic-data"
 import { cn } from "@/lib/utils"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 const featuredSlugs = ["kinh", "hmong", "thai", "cham", "e-de", "khmer", "tay", "dao"]
 
@@ -17,10 +22,34 @@ const stats = [
   { value: "100M+", label: "Dân số" },
 ]
 
-export default function HomePage() {
-  const featured = featuredSlugs
+export default async function HomePage() {
+  let featured: EthnicType[] = featuredSlugs
     .map((s) => ethnicGroups.find((e) => e.slug === s))
     .filter((e): e is NonNullable<typeof e> => Boolean(e))
+
+  let allEthnics: EthnicType[] = ethnicGroups
+
+  try {
+    await connectDB()
+    const dbEthnics = await Ethnic.find().lean()
+    if (dbEthnics && dbEthnics.length > 0) {
+      const dbMap = new Map(dbEthnics.map((e: any) => [e.slug, e]))
+      allEthnics = ethnicGroups.map((staticItem) => {
+        const dbItem = dbMap.get(staticItem.slug)
+        return dbItem ? { ...staticItem, ...dbItem } : staticItem
+      })
+      featured = featuredSlugs
+        .map((s) => {
+          const staticItem = ethnicGroups.find((e) => e.slug === s)
+          const dbItem = dbMap.get(s)
+          if (!staticItem && !dbItem) return null
+          return dbItem ? { ...staticItem, ...dbItem } : staticItem
+        })
+        .filter((e): e is NonNullable<typeof e> => Boolean(e))
+    }
+  } catch (error) {
+    console.error("HomePage load ethnics error, using static fallback:", error)
+  }
 
   return (
     <>
@@ -147,7 +176,7 @@ export default function HomePage() {
             description="Chọn một vùng miền trên bản đồ để khám phá các dân tộc sinh sống tại đó."
           />
           <div className="mt-12">
-            <VietnamMap />
+            <VietnamMap ethnics={allEthnics} />
           </div>
         </div>
       </section>

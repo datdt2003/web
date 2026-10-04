@@ -5,15 +5,38 @@ import { useMemo, useState, useEffect } from "react"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { EthnicCard } from "@/components/ethnic-card"
-import { ethnicGroups, regions, regionsForEthnic, type RegionId } from "@/lib/ethnic-data"
+import { ethnicGroups, regions, regionsForEthnic, type RegionId, type Ethnic } from "@/lib/ethnic-data"
 import { cn } from "@/lib/utils"
 
 type Filter = RegionId | "all"
 
-export function EthnicBrowser() {
+interface EthnicBrowserProps {
+  initialEthnics?: Ethnic[]
+}
+
+export function EthnicBrowser({ initialEthnics }: EthnicBrowserProps) {
   const params = useSearchParams()
+  const [ethnics, setEthnics] = useState<Ethnic[]>(initialEthnics || ethnicGroups)
   const [filter, setFilter] = useState<Filter>("all")
   const [query, setQuery] = useState("")
+
+  useEffect(() => {
+    if (initialEthnics && initialEthnics.length > 0) {
+      setEthnics(initialEthnics)
+    }
+  }, [initialEthnics])
+
+  useEffect(() => {
+    // Luôn fetch client-side để đồng bộ ngay khi admin vừa chỉnh sửa
+    fetch("/api/ethnic")
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData?.success && Array.isArray(resData.data) && resData.data.length > 0) {
+          setEthnics(resData.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const r = params.get("region") as Filter | null
@@ -24,7 +47,7 @@ export function EthnicBrowser() {
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return ethnicGroups
+    return ethnics
       .filter((e) => {
         const okRegion = filter === "all" || regionsForEthnic(e).includes(filter)
         const okQuery =
@@ -34,7 +57,7 @@ export function EthnicBrowser() {
         return okRegion && okQuery
       })
       .sort((a, b) => b.population - a.population)
-  }, [filter, query])
+  }, [ethnics, filter, query])
 
   const tabs: { id: Filter; label: string }[] = [
     { id: "all", label: "Tất cả" },

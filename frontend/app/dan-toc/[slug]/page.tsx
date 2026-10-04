@@ -24,6 +24,7 @@ export function generateStaticParams() {
 }
 
 export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -88,13 +89,27 @@ export default async function EthnicDetailPage({
     ]
   }
 
-  const related = ethnicGroups
+  let related = ethnicGroups
     .filter(
       (e) =>
         e.slug !== ethnic.slug &&
         regionsForEthnic(e).some((region) => regionsForEthnic(ethnic).includes(region)),
     )
     .slice(0, 4)
+
+  try {
+    const relatedSlugs = related.map((r) => r.slug)
+    const dbRelated = await Ethnic.find({ slug: { $in: relatedSlugs } }).lean()
+    if (dbRelated && dbRelated.length > 0) {
+      const dbRelatedMap = new Map(dbRelated.map((r: any) => [r.slug, r]))
+      related = related.map((r) => {
+        const item = dbRelatedMap.get(r.slug)
+        return item ? { ...r, ...item } : r
+      })
+    }
+  } catch (e) {
+    console.error("Load related ethnics error:", e)
+  }
 
   const residenceValue =
     ethnic.residenceArea ||

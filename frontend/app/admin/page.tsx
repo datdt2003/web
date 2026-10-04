@@ -310,31 +310,31 @@ export default function AdminPage() {
     try {
       let loadedEthnics: Ethnic[] = []
 
-      // 1. Thử gọi backend NestJS trước
+      // 1. Ưu tiên gọi Next.js API nội bộ (kết nối trực tiếp MongoDB Atlas)
       try {
-        const res = await fetch(`${BACKEND_URL}/api/ethnic`)
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data.data) && data.data.length > 0) {
-            loadedEthnics = data.data
+        const nextRes = await fetch("/api/ethnic")
+        if (nextRes.ok) {
+          const nextData = await nextRes.json()
+          if (Array.isArray(nextData.data) && nextData.data.length > 0) {
+            loadedEthnics = nextData.data
           }
         }
       } catch (e) {
-        console.warn("Backend /api/ethnic fetch failed:", e)
+        console.warn("Next.js /api/ethnic fetch failed:", e)
       }
 
-      // 2. Nếu backend chưa trả về dữ liệu, thử gọi Next.js API route nội bộ
+      // 2. Dự phòng gọi backend NestJS nếu có
       if (loadedEthnics.length === 0) {
         try {
-          const nextRes = await fetch("/api/ethnic")
-          if (nextRes.ok) {
-            const nextData = await nextRes.json()
-            if (Array.isArray(nextData.data) && nextData.data.length > 0) {
-              loadedEthnics = nextData.data
+          const res = await fetch(`${BACKEND_URL}/api/ethnic`)
+          if (res.ok) {
+            const data = await res.json()
+            if (Array.isArray(data.data) && data.data.length > 0) {
+              loadedEthnics = data.data
             }
           }
         } catch (e) {
-          console.warn("Next.js /api/ethnic fetch failed:", e)
+          console.warn("Backend /api/ethnic fetch failed:", e)
         }
       }
 
@@ -773,19 +773,27 @@ export default function AdminPage() {
     }
 
     try {
-      let res = await fetch(`${BACKEND_URL}/api/ethnic/${editingEthnic.slug}`, {
-        method: "PATCH",
+      // 1. Ưu tiên cập nhật trực tiếp qua API nội bộ Next.js (lưu MongoDB Atlas)
+      let res = await fetch(`/api/ethnic/${editingEthnic.slug}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }).catch(() => null)
 
+      // 2. Dự phòng gọi backend NestJS nếu route nội bộ không phản hồi
       if (!res || !res.ok) {
-        // Dự phòng gọi endpoint Next.js nội bộ
-        res = await fetch(`/api/ethnic/${editingEthnic.slug}`, {
-          method: "PUT",
+        res = await fetch(`${BACKEND_URL}/api/ethnic/${editingEthnic.slug}`, {
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         }).catch(() => null)
+      } else {
+        // Đồng bộ ngầm sang backend phụ nếu có
+        fetch(`${BACKEND_URL}/api/ethnic/${editingEthnic.slug}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).catch(() => {})
       }
 
       if (res && res.ok) {

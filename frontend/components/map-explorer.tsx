@@ -2,11 +2,11 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { MapPin, Search, Users, ChevronRight, X, Compass } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { buttonVariants } from "@/components/ui/button"
-import { regions, ethnicGroups, regionsForEthnic, type RegionId } from "@/lib/ethnic-data"
+import { regions, ethnicGroups, regionsForEthnic, type RegionId, type Ethnic } from "@/lib/ethnic-data"
 import { cn } from "@/lib/utils"
 
 type PointKey =
@@ -80,22 +80,40 @@ function normalize(s: string) {
     .replace(/đ/g, "d")
 }
 
-export function MapExplorer() {
+export function MapExplorer({ initialEthnics }: { initialEthnics?: Ethnic[] }) {
+  const [ethnics, setEthnics] = useState<Ethnic[]>(initialEthnics || ethnicGroups)
   const [query, setQuery] = useState("")
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (initialEthnics && initialEthnics.length > 0) {
+      setEthnics(initialEthnics)
+    }
+  }, [initialEthnics])
+
+  useEffect(() => {
+    fetch("/api/ethnic")
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData?.success && Array.isArray(resData.data) && resData.data.length > 0) {
+          setEthnics(resData.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   const selected = useMemo(
-    () => ethnicGroups.find((e) => e.slug === selectedSlug) ?? null,
-    [selectedSlug],
+    () => ethnics.find((e) => e.slug === selectedSlug) ?? null,
+    [ethnics, selectedSlug],
   )
 
   const results = useMemo(() => {
     const q = normalize(query.trim())
     if (!q) return []
-    return ethnicGroups
+    return ethnics
       .filter((e) => normalize(e.name).includes(q) || (e.altNames && normalize(e.altNames).includes(q)))
       .slice(0, 8)
-  }, [query])
+  }, [ethnics, query])
 
   const activePoints = useMemo(() => {
     if (!selected) return []
