@@ -22,7 +22,7 @@ const nextConfig = {
       },
       {
         source: '/uploads/:path*',
-        destination: `${backendUrl}/uploads/:path*`,
+        destination: '/api/upload/:path*',
       },
     ];
   },

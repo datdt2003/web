@@ -228,6 +228,15 @@ export default function AdminPage() {
     onApply: () => {},
   })
 
+  const normalizeUploadUrl = (url: string) => {
+    if (!url) return ""
+    if (url.includes("/uploads/")) {
+      const fn = url.split("/uploads/").pop()
+      return `/api/upload/${fn}`
+    }
+    return url
+  }
+
   const openCropper = (
     imageUrl: string | undefined,
     title: string,
@@ -240,7 +249,7 @@ export default function AdminPage() {
     }
     setCropperModal({
       isOpen: true,
-      imageUrl,
+      imageUrl: normalizeUploadUrl(imageUrl),
       title,
       aspectRatio,
       onApply,
@@ -368,21 +377,23 @@ export default function AdminPage() {
     formData.append("file", file)
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      // Ưu tiên /api/upload của Next.js (lưu trực tiếp MongoDB Atlas, dùng URL relative)
+      const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
-      })
+      }).catch(() => fetch(`${BACKEND_URL}/api/upload`, { method: "POST", body: formData }))
 
       const data = await res.json()
-      if (res.ok && data.url) {
-        setProductForm((prev) => ({ ...prev, image: data.url }))
-        setToastMessage("Tải ảnh sản phẩm thành công!")
+      if (res && res.ok && data.url) {
+        const finalUrl = normalizeUploadUrl(data.url)
+        setProductForm((prev) => ({ ...prev, image: finalUrl }))
+        setToastMessage("Tải ảnh sản phẩm thành công! Bạn có thể nhấn 'Căn chỉnh ảnh' để điều chỉnh khung hình.")
       } else {
-        alert(data.error || data.message || "Tải ảnh thất bại.")
+        alert(data?.error || data?.message || "Tải ảnh thất bại.")
       }
     } catch (err) {
       console.error("Upload sản phẩm error:", err)
-      alert("Không thể upload ảnh sản phẩm. Hãy kiểm tra backend.")
+      alert("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối.")
     } finally {
       event.target.value = ""
     }
@@ -483,16 +494,19 @@ export default function AdminPage() {
     setUploadingEditProductImage(true)
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      // Ưu tiên /api/upload của Next.js (lưu trực tiếp MongoDB Atlas, dùng URL relative)
+      const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
-      })
+      }).catch(() => fetch(`${BACKEND_URL}/api/upload`, { method: "POST", body: formData }))
+
       const data = await res.json()
-      if (res.ok && data.url) {
-        setEditProductForm((prev) => ({ ...prev, image: data.url }))
-        setToastMessage("Tải ảnh mới cho sản phẩm thành công!")
+      if (res && res.ok && data.url) {
+        const finalUrl = normalizeUploadUrl(data.url)
+        setEditProductForm((prev) => ({ ...prev, image: finalUrl }))
+        setToastMessage("Tải ảnh mới cho sản phẩm thành công! Bạn có thể nhấn 'Căn chỉnh ảnh' để điều chỉnh.")
       } else {
-        alert(data.error || data.message || "Tải ảnh thất bại.")
+        alert(data?.error || data?.message || "Tải ảnh thất bại.")
       }
     } catch (err) {
       console.error("Upload edit product image error:", err)
@@ -679,26 +693,28 @@ export default function AdminPage() {
     else setUploadingVideo(true)
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      // Ưu tiên /api/upload của Next.js (lưu trực tiếp MongoDB Atlas, dùng URL relative)
+      const res = await fetch("/api/upload", {
         method: "POST",
         body: uploadForm,
-      })
+      }).catch(() => fetch(`${BACKEND_URL}/api/upload`, { method: "POST", body: uploadForm }))
 
       const data = await res.json()
-      if (res.ok && data.url) {
+      if (res && res.ok && data.url) {
+        const finalUrl = normalizeUploadUrl(data.url)
         if (type === "image") {
-          setFormData((prev) => ({ ...prev, image: data.url }))
-          setToastMessage("Tải ảnh mới lên thành công!")
+          setFormData((prev) => ({ ...prev, image: finalUrl }))
+          setToastMessage("Tải ảnh mới lên thành công! Bạn có thể nhấn 'Căn chỉnh ảnh' để điều chỉnh.")
         } else {
-          setFormData((prev) => ({ ...prev, videoUrl: data.url }))
+          setFormData((prev) => ({ ...prev, videoUrl: finalUrl }))
           setToastMessage("Tải video mới lên thành công!")
         }
       } else {
-        alert(data.error || data.message || "Tải file lên thất bại.")
+        alert(data?.error || data?.message || "Tải file lên thất bại.")
       }
     } catch (err) {
       console.error("Upload error:", err)
-      alert("Không thể kết nối tới server backend để upload. Hãy chắc chắn backend NestJS đang chạy.")
+      alert("Không thể tải file lên. Hãy kiểm tra kết nối.")
     } finally {
       if (type === "image") setUploadingImage(false)
       else setUploadingVideo(false)
@@ -827,19 +843,22 @@ export default function AdminPage() {
     formData.append("file", file)
     setUploadingEthnicProdImg(true)
     try {
-      const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      // Ưu tiên /api/upload của Next.js (lưu trực tiếp MongoDB Atlas, dùng URL relative)
+      const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
-      })
+      }).catch(() => fetch(`${BACKEND_URL}/api/upload`, { method: "POST", body: formData }))
+
       const data = await res.json()
-      if (res.ok && data.url) {
-        setEthnicProductForm((prev) => ({ ...prev, image: data.url }))
-        setToastMessage("Tải ảnh sản phẩm thành công!")
+      if (res && res.ok && data.url) {
+        const finalUrl = normalizeUploadUrl(data.url)
+        setEthnicProductForm((prev) => ({ ...prev, image: finalUrl }))
+        setToastMessage("Tải ảnh sản phẩm thành công! Bạn có thể nhấn 'Căn chỉnh ảnh' để điều chỉnh.")
       } else {
-        alert(data.error || data.message || "Tải ảnh thất bại.")
+        alert(data?.error || data?.message || "Tải ảnh thất bại.")
       }
     } catch {
-      alert("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối backend.")
+      alert("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối.")
     } finally {
       setUploadingEthnicProdImg(false)
       e.target.value = ""

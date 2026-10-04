@@ -26,6 +26,16 @@ interface ImageCropperModalProps {
   onApply: (newImageUrl: string) => void
 }
 
+function normalizeImageUrl(url: string): string {
+  if (!url) return ""
+  // Chuyển link localhost:5000/uploads hoặc backend/uploads thành đường dẫn API chuẩn /api/upload
+  if (url.includes("/uploads/")) {
+    const filename = url.split("/uploads/").pop()
+    if (filename) return `/api/upload/${filename}`
+  }
+  return url
+}
+
 export function ImageCropperModal({
   isOpen,
   imageUrl,
@@ -36,6 +46,8 @@ export function ImageCropperModal({
   onApply,
 }: ImageCropperModalProps) {
   const [aspect, setAspect] = useState<number>(aspectRatio)
+  const [displayUrl, setDisplayUrl] = useState<string>("")
+  const [triedProxy, setTriedProxy] = useState(false)
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [rotation, setRotation] = useState(0) // 0, 90, 180, 270
@@ -51,7 +63,10 @@ export function ImageCropperModal({
 
   // Reset state when modal opens with a new image
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && imageUrl) {
+      const normalized = normalizeImageUrl(imageUrl)
+      setDisplayUrl(normalized)
+      setTriedProxy(false)
       setAspect(aspectRatio)
       setScale(1)
       setPosition({ x: 0, y: 0 })
@@ -61,6 +76,17 @@ export function ImageCropperModal({
       setImgError(false)
     }
   }, [isOpen, imageUrl, aspectRatio])
+
+  // Xử lý lỗi load ảnh xem trước: Thử proxy server-side trước khi báo lỗi
+  const handleImgError = () => {
+    if (!triedProxy && displayUrl && !displayUrl.startsWith("data:") && !displayUrl.startsWith("blob:")) {
+      setTriedProxy(true)
+      const proxyUrl = `/api/upload/proxy?url=${encodeURIComponent(displayUrl)}`
+      setDisplayUrl(proxyUrl)
+    } else {
+      setImgError(true)
+    }
+  }
 
   // Mouse & Touch drag handling
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -144,21 +170,28 @@ export function ImageCropperModal({
     setIsProcessing(true)
 
     try {
+      const targetSrc = displayUrl || normalizeImageUrl(imageUrl)
+
       // Create offscreen image
       const img = new Image()
       img.crossOrigin = "anonymous"
 
-      // Handle loading
+      // Handle loading with CORS, fallback to proxy
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve()
         img.onerror = () => {
-          // If crossOrigin fails, try without crossOrigin or proxy
-          img.crossOrigin = null as any
-          img.src = imageUrl
-          img.onload = () => resolve()
-          img.onerror = (e) => reject(e)
+          // If crossOrigin fails or remote host blocks CORS, load through server proxy
+          const proxySrc = `/api/upload/proxy?url=${encodeURIComponent(targetSrc)}`
+          const retryImg = new Image()
+          retryImg.crossOrigin = "anonymous"
+          retryImg.onload = () => {
+            img.src = retryImg.src
+            resolve()
+          }
+          retryImg.onerror = (e) => reject(e)
+          retryImg.src = proxySrc
         }
-        img.src = imageUrl
+        img.src = targetSrc
       })
 
       const canvas = document.createElement("canvas")
@@ -206,20 +239,21 @@ export function ImageCropperModal({
 
       // Export canvas to Blob
       const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.92)
+        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.90)
       })
 
       if (blob) {
-        // Try uploading the adjusted image to backend
+        // Tải ảnh đã căn chỉnh lên hệ thống lưu trữ MongoDB Atlas
         try {
           const formData = new FormData()
           const file = new File([blob], `adjusted-${Date.now()}.jpg`, { type: "image/jpeg" })
           formData.append("file", file)
 
-          const res = await fetch(`${backendUrl}/api/upload`, {
+          // Ưu tiên lưu vào /api/upload của Next.js (lưu trực tiếp MongoDB Atlas, dùng link relative)
+          const res = await fetch("/api/upload", {
             method: "POST",
             body: formData,
-          }).catch(() => null)
+          }).catch(() => fetch(`${backendUrl}/api/upload`, { method: "POST", body: formData }))
 
           if (res && res.ok) {
             const data = await res.json()
@@ -233,12 +267,12 @@ export function ImageCropperModal({
           console.warn("Upload adjusted image failed, fallback to data URL:", uploadErr)
         }
 
-        // Fallback to data URL
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.92)
+        // Fallback sang data URL
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.90)
         onApply(dataUrl)
         onClose()
       } else {
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.92)
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.90)
         onApply(dataUrl)
         onClose()
       }
@@ -300,14 +334,14 @@ export function ImageCropperModal({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 ref={imgRef}
-                src={imageUrl}
+                src={displayUrl || normalizeImageUrl(imageUrl)}
                 alt="Ảnh căn chỉnh"
-                crossOrigin="anonymous"
                 draggable={false}
-                onError={() => setImgError(true)}
+                onError={handleImgError}
                 onLoad={(e) => {
                   const target = e.currentTarget
                   setImageSize({ width: target.naturalWidth, height: target.naturalHeight })
+                  setImgError(false)
                 }}
                 style={{
                   transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
