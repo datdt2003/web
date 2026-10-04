@@ -17,7 +17,6 @@ import {
   type Product as ProductData,
 } from "@/lib/ethnic-data"
 import { cn } from "@/lib/utils"
-import { ResidenceContactTrigger } from "@/components/residence-contact-trigger"
 
 export function generateStaticParams() {
   return ethnicGroups.map((e) => ({ slug: e.slug }))
@@ -124,7 +123,6 @@ export default async function EthnicDetailPage({
       icon: MapPin,
       label: "Vùng cư trú",
       value: residenceValue,
-      isResidence: true,
     },
     { icon: Home, label: "Tên gọi khác", value: ethnic.altNames || ethnic.name },
   ]
@@ -192,12 +190,9 @@ export default async function EthnicDetailPage({
                       <f.icon className="size-5" />
                     </span>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          {f.label}
-                        </dt>
-                        {f.isResidence && <ResidenceContactTrigger />}
-                      </div>
+                      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {f.label}
+                      </dt>
                       <dd className="font-semibold leading-relaxed text-foreground">{f.value}</dd>
                     </div>
                   </div>
