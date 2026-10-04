@@ -48,11 +48,6 @@ export async function createApp(expressInstance?: Express) {
   try {
     app.useStaticAssets(uploadDir, {
       prefix: '/uploads/',
-      setHeaders: (res) => {
-        res.set('Access-Control-Allow-Origin', '*');
-        res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-      },
     });
   } catch (e) {
     console.warn('Could not setup static uploads directory:', e);
