@@ -212,6 +212,7 @@ export default function AdminPage() {
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
+  const [brokenImgSlugs, setBrokenImgSlugs] = useState<Record<string, boolean>>({})
 
   // Image Cropper Modal State
   const [cropperModal, setCropperModal] = useState<{
@@ -1877,11 +1878,16 @@ export default function AdminPage() {
                       <div className="flex gap-4">
                         <div className="relative size-20 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
                           <Image
-                            src={ethnic.image || "/placeholder.svg"}
+                            src={
+                              brokenImgSlugs[ethnic.slug]
+                                ? (ethnicGroups.find((g) => g.slug === ethnic.slug)?.image || "/images/ethnic-kinh.png")
+                                : (ethnic.image || ethnicGroups.find((g) => g.slug === ethnic.slug)?.image || "/placeholder.svg")
+                            }
                             alt={ethnic.name}
                             fill
                             sizes="80px"
                             className="object-cover transition-transform group-hover:scale-105"
+                            onError={() => setBrokenImgSlugs((prev) => ({ ...prev, [ethnic.slug]: true }))}
                           />
                         </div>
 
@@ -2179,7 +2185,11 @@ export default function AdminPage() {
                   {/* Image preview */}
                   <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
                     <Image
-                      src={formData.image || "/placeholder.svg"}
+                      src={
+                        formData.image ||
+                        ethnicGroups.find((g) => g.slug === formData.slug)?.image ||
+                        "/images/ethnic-kinh.png"
+                      }
                       alt="Ảnh dân tộc"
                       fill
                       sizes="96px"

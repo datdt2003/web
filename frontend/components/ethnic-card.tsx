@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Play, Users } from "lucide-react"
-import { type Ethnic } from "@/lib/ethnic-data"
+import { type Ethnic, ethnicGroups } from "@/lib/ethnic-data"
 
 export function EthnicCard({ ethnic }: { ethnic: Ethnic }) {
   return (
@@ -11,7 +11,7 @@ export function EthnicCard({ ethnic }: { ethnic: Ethnic }) {
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <Image
-          src={ethnic.image || "/placeholder.svg"}
+          src={ethnic.image || ethnicGroups.find((g) => g.slug === ethnic.slug)?.image || "/images/ethnic-kinh.png"}
           alt={`Người ${ethnic.name}`}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"

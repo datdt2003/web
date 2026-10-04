@@ -87,6 +87,29 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       }
     }
 
+    // 3. Fallback an toàn nếu file cũ bị mất: Trả về ảnh mặc định thay vì trả về 404 gây vỡ ảnh
+    const fallbackCandidates = [
+      path.join(process.cwd(), "public", "images", "ethnic-kinh.png"),
+      path.join(process.cwd(), "public", "placeholder.svg"),
+    ]
+
+    for (const fb of fallbackCandidates) {
+      if (fs.existsSync(fb)) {
+        const buffer = fs.readFileSync(fb)
+        const isSvg = fb.endsWith(".svg")
+        return new NextResponse(buffer, {
+          status: 200,
+          headers: {
+            "Content-Type": isSvg ? "image/svg+xml" : "image/png",
+            "Content-Length": buffer.length.toString(),
+            "Cache-Control": "public, max-age=60",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+          },
+        })
+      }
+    }
+
     return new NextResponse("File không tồn tại", { status: 404 })
   } catch (error: any) {
     console.error("Lỗi khi phục vụ file upload:", error)
