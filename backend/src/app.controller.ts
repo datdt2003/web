@@ -6,9 +6,9 @@ export class AppController {
   getHealth() {
     return {
       status: 'ok',
-      message: 'Sac Viet Backend API is running',
+      message: 'Hon Y Dat Viet Backend API is running',
       timestamp: new Date().toISOString(),
-      service: 'sac-viet-backend',
+      service: 'hon-y-dat-viet-backend',
     };
   }
 

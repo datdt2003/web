@@ -40,11 +40,10 @@ import { ethnicGroups, formatVND, products as defaultEthnicProducts } from "@/li
 import { ImageCropperModal } from "@/components/image-cropper-modal"
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
   (typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
     ? "http://localhost:5000"
-    : "https://honydatvietbe.vercel.app")
+    : (process.env.NEXT_PUBLIC_BACKEND_URL || "https://honydatvietbe.vercel.app")
 
 interface OrderItem {
   productId: string

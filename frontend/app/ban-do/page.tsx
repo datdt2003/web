@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 export const metadata: Metadata = {
-  title: "Bản đồ phân bố 54 dân tộc | Sắc Việt",
+  title: "Bản đồ phân bố 54 dân tộc | Hồn Y Đất Việt",
   description:
     "Bản đồ phân bố 54 dân tộc Việt Nam. Tìm một dân tộc, bản đồ sẽ đánh dấu những vùng họ sinh sống nhiều nhất trên khắp ba miền Bắc – Trung – Nam.",
 }
@@ -18,16 +18,21 @@ export default async function BanDoPage() {
   let initialEthnics: EthnicType[] = ethnicGroups
   try {
     await connectDB()
-    const dbEthnics = await Ethnic.find().sort({ population: -1 }).lean()
+    const rawDbEthnics = await Ethnic.find().sort({ population: -1 }).lean()
+    const dbEthnics = JSON.parse(JSON.stringify(rawDbEthnics))
     if (dbEthnics && dbEthnics.length > 0) {
       const dbMap = new Map(dbEthnics.map((e: any) => [e.slug, e]))
       initialEthnics = ethnicGroups.map((staticItem) => {
         const dbItem = dbMap.get(staticItem.slug)
-        return dbItem ? { ...staticItem, ...dbItem } : staticItem
+        const item: EthnicType = dbItem ? { ...staticItem, ...dbItem, slug: staticItem.slug } : staticItem
+        delete (item as any)._id
+        return item
       })
       for (const dbItem of dbEthnics as any[]) {
         if (!ethnicGroups.some((e) => e.slug === dbItem.slug)) {
-          initialEthnics.push(dbItem as EthnicType)
+          const item = { ...dbItem }
+          delete item._id
+          initialEthnics.push(item as EthnicType)
         }
       }
     }

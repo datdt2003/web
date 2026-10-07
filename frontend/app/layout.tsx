@@ -7,6 +7,7 @@ import { CartProvider } from '@/components/providers/cart-provider'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { ContactBubble } from '@/components/contact-bubble'
+import { CartNotification } from '@/components/cart-notification'
 
 const beVietnam = Be_Vietnam_Pro({
   subsets: ['latin', 'vietnamese'],
@@ -47,6 +48,7 @@ export default function RootLayout({
             <SiteHeader />
             <main className="min-h-[60vh]">{children}</main>
             <SiteFooter />
+            <CartNotification />
             <ContactBubble />
           </CartProvider>
         </AuthProvider>

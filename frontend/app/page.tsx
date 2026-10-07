@@ -18,7 +18,7 @@ const featuredSlugs = ["kinh", "hmong", "thai", "cham", "e-de", "khmer", "tay", 
 const stats = [
   { value: "54", label: "Dân tộc anh em" },
   { value: "8", label: "Nhóm ngôn ngữ" },
-  { value: "63", label: "Tỉnh thành" },
+  { value: "34", label: "Tỉnh thành" },
   { value: "100M+", label: "Dân số" },
 ]
 
@@ -31,21 +31,26 @@ export default async function HomePage() {
 
   try {
     await connectDB()
-    const dbEthnics = await Ethnic.find().lean()
+    const rawDbEthnics = await Ethnic.find().lean()
+    const dbEthnics = JSON.parse(JSON.stringify(rawDbEthnics))
     if (dbEthnics && dbEthnics.length > 0) {
       const dbMap = new Map(dbEthnics.map((e: any) => [e.slug, e]))
       allEthnics = ethnicGroups.map((staticItem) => {
         const dbItem = dbMap.get(staticItem.slug)
-        return dbItem ? { ...staticItem, ...dbItem } : staticItem
+        const item: EthnicType = dbItem ? { ...staticItem, ...dbItem, slug: staticItem.slug } : staticItem
+        delete (item as any)._id
+        return item
       })
       featured = featuredSlugs
         .map((s) => {
           const staticItem = ethnicGroups.find((e) => e.slug === s)
+          if (!staticItem) return null
           const dbItem = dbMap.get(s)
-          if (!staticItem && !dbItem) return null
-          return dbItem ? { ...staticItem, ...dbItem } : staticItem
+          const item: EthnicType = dbItem ? { ...staticItem, ...dbItem, slug: staticItem.slug } : staticItem
+          delete (item as any)._id
+          return item
         })
-        .filter((e): e is NonNullable<typeof e> => Boolean(e))
+        .filter((e): e is EthnicType => Boolean(e))
     }
   } catch (error) {
     console.error("HomePage load ethnics error, using static fallback:", error)
@@ -74,7 +79,7 @@ export default async function HomePage() {
               Bản sắc văn hóa Việt Nam
             </span>
             <h1 className="mt-5 text-balance font-serif text-4xl font-bold leading-tight md:text-6xl">
-              54 Dân tộc anh em, một cội nguồn Việt Nam
+              Kết nối tinh hoa, Lan toả bản sắc
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-base leading-relaxed text-primary-foreground/90 md:text-lg">
               Khám phá video, câu chuyện và di sản văn hóa của từng dân tộc trải
@@ -143,13 +148,13 @@ export default async function HomePage() {
             <SectionHeading
               eyebrow="Về dự án"
               title="Gìn giữ và lan tỏa di sản của cộng đồng các dân tộc"
-              description="Hồn Y Đất Việt là hành trình số hóa văn hóa 54 dân tộc — nơi mỗi dân tộc có một trang riêng với video giới thiệu, câu chuyện về phong tục, trang phục, lễ hội và những sản phẩm thủ công truyền thống."
+              description="Hồn Y Đất Việt là hành trình đưa văn hóa 54 dân tộc lên nền tảng số — nơi mỗi dân tộc có một trang riêng với video giới thiệu, câu chuyện về phong tục, trang phục, lễ hội và những sản phẩm thủ công truyền thống."
             />
             <ul className="mt-6 space-y-4">
               {[
                 { t: "Video tư liệu", d: "Mỗi dân tộc có video giới thiệu về đời sống và văn hóa đặc trưng." },
                 { t: "Câu chuyện văn hóa", d: "Tìm hiểu phong tục, lễ hội, trang phục và ngôn ngữ của từng cộng đồng." },
-                { t: "Sản phẩm truyền thống", d: "Ủng hộ nghề thủ công qua các sản phẩm thổ cẩm, nhạc cụ, gốm sứ." },
+                { t: "Mô hình & Nội dung số", d: "Mỗi sản phẩm tái hiện nét đặc trưng của từng dân tộc thông qua nhân vật 3D, trang phục truyền thống, nhạc cụ và bối cảnh văn hóa, kết hợp mã QR để người dùng khám phá thêm video và nội dung giới thiệu." },
               ].map((f) => (
                 <li key={f.t} className="flex gap-4">
                   <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -218,8 +223,7 @@ export default async function HomePage() {
                 Cùng gìn giữ bản sắc văn hóa Việt Nam
               </h2>
               <p className="mt-4 text-pretty text-primary-foreground/90">
-                Tạo tài khoản để lưu lại các dân tộc yêu thích và ủng hộ sản phẩm
-                thủ công truyền thống.
+                Tạo tài khoản để lưu lại các dân tộc yêu thích và trải nghiệm/khám phá sản phẩm mô hình Hồn Y Đất Việt.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link

@@ -1,13 +1,29 @@
 "use client"
 
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Info, X } from "lucide-react"
-import { getProductDetails, type Product } from "@/lib/ethnic-data"
+import { Info, X, ShoppingCart } from "lucide-react"
+import { useCart } from "@/components/providers/cart-provider"
+import { useAuth } from "@/components/providers/auth-provider"
+import { getProductDetails, formatVND, type Product } from "@/lib/ethnic-data"
 
 export function ProductCard({ product }: { product: Product }) {
   const [isOpen, setIsOpen] = useState(false)
+  const { add } = useCart()
+  const { user } = useAuth()
+  const router = useRouter()
   const details = getProductDetails(product)
+
+  const handleAddToCart = () => {
+    if (!user) {
+      if (confirm("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng của bạn. Đi đến trang đăng nhập ngay?")) {
+        router.push("/dang-nhap")
+      }
+      return
+    }
+    add(product)
+  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -22,31 +38,66 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="group flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        aria-label={`Xem chi tiết ${product.name}`}
-      >
-        <div className="relative aspect-square overflow-hidden">
-        <Image
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
-          fill
-          sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold text-foreground">
-          {product.category}
-        </span>
+      <div className="group flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition-shadow hover:shadow-md">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault()
+              setIsOpen(true)
+            }
+          }}
+          className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label={`Xem chi tiết ${product.name}`}
+        >
+          <div className="relative aspect-square overflow-hidden">
+            <Image
+              src={product.image || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 50vw, 25vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+              {product.category}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3 p-4 pb-2">
+            <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
+              {product.name}
+            </h3>
+            <Info className="size-4 shrink-0 text-primary" />
+          </div>
         </div>
-        <div className="flex flex-1 items-center justify-between gap-3 p-4">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
-            {product.name}
-          </h3>
-          <Info className="size-4 shrink-0 text-primary" />
-        </div>
-      </button>
+
+        {product.forSale ? (
+          <div className="mt-auto flex flex-col p-4 pt-1">
+            <p className="font-serif text-base font-bold text-primary">
+              {formatVND(product.price)}
+            </p>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="mt-2.5 flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            >
+              <ShoppingCart className="size-3.5" />
+              Thêm vào giỏ
+            </button>
+          </div>
+        ) : (
+          <div className="mt-auto p-4 pt-0">
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Xem chi tiết văn hóa →
+            </button>
+          </div>
+        )}
+      </div>
 
       {isOpen && (
         <div
@@ -108,6 +159,25 @@ export function ProductCard({ product }: { product: Product }) {
                     <dd className="mt-1 leading-relaxed text-muted-foreground">{details.culturalValue}</dd>
                   </div>
                 </dl>
+              )}
+
+              {product.forSale && (
+                <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-5">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Giá sản phẩm</span>
+                    <p className="font-serif text-xl font-bold text-primary">
+                      {formatVND(product.price)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  >
+                    <ShoppingCart className="size-4" />
+                    Thêm vào giỏ
+                  </button>
+                </div>
               )}
             </div>
           </div>

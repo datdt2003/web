@@ -179,7 +179,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, { ...itemToAdd, qty }]
     })
-    setLastAddedItem({ ...itemToAdd, qty })
+    // Reset trước một nhịp nhỏ để trigger re-render animation nếu bấm liên tục
+    setLastAddedItem(null)
+    setTimeout(() => {
+      setLastAddedItem({ ...itemToAdd, qty })
+    }, 10)
   }
 
   const remove = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id))

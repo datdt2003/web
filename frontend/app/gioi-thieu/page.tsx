@@ -41,8 +41,8 @@ const features = [
   },
   {
     icon: ShoppingBag,
-    title: "Sản phẩm truyền thống",
-    desc: "Gian hàng thổ cẩm, nhạc cụ, gốm sứ… giúp ủng hộ trực tiếp các nghệ nhân và làng nghề.",
+    title: "Mô hình & Nội dung số",
+    desc: "Mỗi sản phẩm tái hiện nét đặc trưng của từng dân tộc thông qua nhân vật 3D, trang phục truyền thống, nhạc cụ và bối cảnh văn hóa, kết hợp mã QR để người dùng khám phá thêm video và nội dung giới thiệu.",
   },
 ]
 
@@ -50,7 +50,7 @@ const values = [
   {
     icon: HeartHandshake,
     title: "Gìn giữ",
-    desc: "Lưu trữ số hóa các giá trị văn hóa đang có nguy cơ mai một theo thời gian.",
+    desc: "Gìn giữ và số hóa các giá trị văn hóa đang có nguy cơ mai một theo thời gian.",
   },
   {
     icon: Users,
@@ -115,13 +115,18 @@ export default function GioiThieuPage() {
             <SectionHeading
               eyebrow="Sứ mệnh"
               title="Mỗi dân tộc là một sắc màu của Việt Nam"
-              description="Việt Nam là quốc gia đa dân tộc với 54 cộng đồng, mỗi cộng đồng mang một ngôn ngữ, trang phục, tín ngưỡng và kho tàng nghệ thuật riêng. Nhiều giá trị trong số đó đang dần mai một trước nhịp sống hiện đại."
             />
-            <p className="mt-4 leading-relaxed text-muted-foreground">
-              Hồn Y Đất Việt tập hợp những tư liệu ấy vào một không gian số duy nhất —
-              nơi bất kỳ ai cũng có thể tìm hiểu, xem video và ủng hộ các nghệ
-              nhân, góp phần để di sản được tiếp nối cho các thế hệ mai sau.
-            </p>
+            <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
+              <p>
+                Việt Nam là mái nhà chung của 54 dân tộc, mỗi cộng đồng mang những nét đặc trưng riêng về trang phục, ngôn ngữ, phong tục, tín ngưỡng, nhạc cụ và nghệ thuật truyền thống. Những giá trị ấy tạo nên một nền văn hóa Việt Nam đa dạng, giàu bản sắc và cần được gìn giữ, tiếp nối qua nhiều thế hệ.
+              </p>
+              <p>
+                Hồn Y Đất Việt hướng đến việc đưa những câu chuyện văn hóa ấy đến gần hơn với cộng đồng, đặc biệt là thế hệ trẻ, thông qua sự kết hợp giữa mô hình trưng bày và nội dung số. Mỗi sản phẩm tái hiện những nét đặc trưng của từng dân tộc qua trang phục, nhạc cụ, nhân vật và bối cảnh văn hóa, đồng thời kết nối với video và thông tin qua mã QR.
+              </p>
+              <p>
+                Qua đó, dự án mong muốn góp phần gìn giữ, tôn vinh và lan tỏa bản sắc văn hóa của 54 dân tộc Việt Nam, để văn hóa truyền thống không chỉ được tìm hiểu mà còn có thể được trải nghiệm, trưng bày, chia sẻ và tiếp nối trong đời sống hiện đại.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -210,8 +215,7 @@ export default function GioiThieuPage() {
                 Bắt đầu hành trình khám phá
               </h2>
               <p className="mt-4 text-pretty text-primary-foreground/90">
-                Xem video, tìm hiểu văn hóa và ủng hộ sản phẩm truyền thống của
-                54 dân tộc anh em.
+                Xem video, tìm hiểu văn hóa và trải nghiệm/khám phá sản phẩm mô hình Hồn Y Đất Việt của 54 dân tộc anh em.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link

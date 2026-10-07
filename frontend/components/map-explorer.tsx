@@ -274,7 +274,7 @@ export function MapExplorer({ initialEthnics }: { initialEthnics?: Ethnic[] }) {
       <div className="rounded-3xl border border-border bg-gradient-to-b from-muted/50 to-background p-4 sm:p-6">
         <div className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-2xl border border-border bg-background">
           <Image
-            src="/images/vietnam-map.png"
+            src="/images/vietnam-map.png?v=20261007"
             alt="Bản đồ Việt Nam"
             fill
             sizes="(max-width: 1024px) 90vw, 40vw"

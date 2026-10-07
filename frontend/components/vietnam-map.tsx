@@ -39,13 +39,13 @@ export function VietnamMap({ ethnics: propEthnics }: { ethnics?: Ethnic[] }) {
   }
 
   return (
-    <div className="grid items-center gap-8 lg:grid-cols-2">
-      <div className="relative mx-auto aspect-square w-full max-w-md">
+    <div className="flex justify-center">
+      <div className="relative mx-auto aspect-square w-full max-w-lg">
         <Image
-          src="/images/vietnam-map.png"
+          src="/images/vietnam-map.png?v=20261007"
           alt="Bản đồ Việt Nam"
           fill
-          sizes="(max-width: 1024px) 90vw, 40vw"
+          sizes="(max-width: 1024px) 90vw, 550px"
           className="object-contain"
         />
         {regions.map((r) => {
@@ -68,11 +68,11 @@ export function VietnamMap({ ethnics: propEthnics }: { ethnics?: Ethnic[] }) {
                     isActive ? "scale-150" : "animate-ping",
                   )}
                 />
-                <span className="relative grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow-md">
+                <span className="relative grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110">
                   <MapPin className="size-3.5" />
                 </span>
                 {isActive && (
-                  <span className="absolute bottom-full mb-1 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background">
+                  <span className="absolute bottom-full mb-1 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background shadow-lg">
                     {r.short} · {countFor(r.id)} dân tộc
                   </span>
                 )}
@@ -80,32 +80,6 @@ export function VietnamMap({ ethnics: propEthnics }: { ethnics?: Ethnic[] }) {
             </Link>
           )
         })}
-      </div>
-
-      <div className="space-y-3">
-        {regions.map((r) => (
-          <Link
-            key={r.id}
-            href={`/dan-toc?region=${r.id}`}
-            onMouseEnter={() => setActive(r.id)}
-            onMouseLeave={() => setActive(null)}
-            className={cn(
-              "group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-all hover:border-primary hover:shadow-md",
-              active === r.id && "border-primary shadow-md",
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-lg bg-primary/10 text-primary">
-                <MapPin className="size-5" />
-              </span>
-              <div>
-                <h3 className="font-serif text-base font-bold text-foreground">{r.label}</h3>
-                <p className="text-sm text-muted-foreground">{countFor(r.id)} dân tộc anh em</p>
-              </div>
-            </div>
-            <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-          </Link>
-        ))}
       </div>
     </div>
   )

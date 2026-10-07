@@ -8,12 +8,13 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
 
     "sourceMap": true,
     "rootDir": "./src",
     "outDir": "./dist",
 
-    "incremental": true,
+    "incremental": false,
     "skipLibCheck": true,
 
     "strictNullChecks": false,

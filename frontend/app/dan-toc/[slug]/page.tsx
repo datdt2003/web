@@ -28,9 +28,9 @@ export const revalidate = 0
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const ethnic = getEthnic(slug)
-  if (!ethnic) return { title: "Không tìm thấy — Sắc Việt" }
+  if (!ethnic) return { title: "Không tìm thấy — Hồn Y Đất Việt" }
   return {
-    title: `Dân tộc ${ethnic.name} — Sắc Việt`,
+    title: `Dân tộc ${ethnic.name} — Hồn Y Đất Việt`,
     description: ethnic.blurb,
   }
 }
@@ -47,8 +47,9 @@ export default async function EthnicDetailPage({
   let ethnic = fallbackEthnic
   try {
     await connectDB()
-    const databaseEthnic = await Ethnic.findOne({ slug }).lean()
-    if (databaseEthnic) {
+    const rawDatabaseEthnic = await Ethnic.findOne({ slug }).lean()
+    if (rawDatabaseEthnic) {
+      const databaseEthnic = JSON.parse(JSON.stringify(rawDatabaseEthnic))
       ethnic = { ...fallbackEthnic, ...databaseEthnic, slug: fallbackEthnic.slug }
     }
   } catch (error) {
@@ -59,9 +60,9 @@ export default async function EthnicDetailPage({
   let displayProducts: any[] = []
   try {
     await connectDB()
-    const dbProducts = await Product.find({ ethnicSlug: ethnic.slug }).lean()
-    if (dbProducts && dbProducts.length > 0) {
-      displayProducts = dbProducts
+    const rawDbProducts = await Product.find({ ethnicSlug: ethnic.slug }).lean()
+    if (rawDbProducts && rawDbProducts.length > 0) {
+      displayProducts = JSON.parse(JSON.stringify(rawDbProducts))
     }
   } catch (error) {
     console.error("Load ethnic products from DB error:", error)
@@ -98,12 +99,17 @@ export default async function EthnicDetailPage({
 
   try {
     const relatedSlugs = related.map((r) => r.slug)
-    const dbRelated = await Ethnic.find({ slug: { $in: relatedSlugs } }).lean()
+    const rawDbRelated = await Ethnic.find({ slug: { $in: relatedSlugs } }).lean()
+    const dbRelated = JSON.parse(JSON.stringify(rawDbRelated))
     if (dbRelated && dbRelated.length > 0) {
       const dbRelatedMap = new Map(dbRelated.map((r: any) => [r.slug, r]))
       related = related.map((r) => {
         const item = dbRelatedMap.get(r.slug)
-        return item ? { ...r, ...item } : r
+        if (item) {
+          delete (item as any)._id
+          return { ...r, ...item }
+        }
+        return r
       })
     }
   } catch (e) {
@@ -213,10 +219,14 @@ export default async function EthnicDetailPage({
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="font-serif text-2xl font-bold text-foreground md:text-3xl">
-                Sản phẩm truyền thống
+                {["tay", "thai", "muong", "nung", "khmer", "hmong"].includes(ethnic.slug)
+                  ? "Sản phẩm trưng bày"
+                  : "Sản phẩm truyền thống"}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tìm hiểu những sản phẩm thủ công và giá trị văn hóa của cộng đồng dân tộc {ethnic.name}.
+                {["tay", "thai", "muong", "nung", "khmer", "hmong"].includes(ethnic.slug)
+                  ? `Khám phá các sản phẩm thủ công tiêu biểu của đồng bào dân tộc ${ethnic.name}. Có thể thêm trực tiếp vào giỏ hàng để sở hữu hoặc làm quà tặng lưu niệm.`
+                  : `Tìm hiểu những sản phẩm thủ công và giá trị văn hóa của cộng đồng dân tộc ${ethnic.name}.`}
               </p>
             </div>
           </div>

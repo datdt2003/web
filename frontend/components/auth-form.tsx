@@ -67,7 +67,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             Hành trình khám phá văn hóa 54 dân tộc Việt Nam
           </h2>
           <p className="mt-3 max-w-md text-primary-foreground/85">
-            Đăng nhập để lưu các dân tộc yêu thích và ủng hộ sản phẩm thủ công truyền thống.
+            Đăng nhập để lưu các dân tộc yêu thích và trải nghiệm/khám phá sản phẩm mô hình Hồn Y Đất Việt.
           </p>
         </div>
       </div>

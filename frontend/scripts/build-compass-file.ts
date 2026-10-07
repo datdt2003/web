@@ -36,7 +36,7 @@ db.users.drop();
 db.createCollection("users");
 db.users.insertMany([
   {
-    name: "Ban Quản Trị Sắc Việt",
+    name: "Ban Quản Trị Hồn Y Đất Việt",
     email: "admin@sacviet.vn",
     password: "${hash}",
     role: "admin",

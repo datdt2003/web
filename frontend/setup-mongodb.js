@@ -1,5 +1,5 @@
 // ==============================================================================
-// SCRIPT KHỞI TẠO TOÀN BỘ CƠ SỞ DỮ LIỆU MONGODB CHO DỰ ÁN SẮC VIỆT
+// SCRIPT KHỞI TẠO TOÀN BỘ CƠ SỞ DỮ LIỆU MONGODB CHO DỰ ÁN HỒN Y ĐẤT VIỆT
 // Chạy trực tiếp bằng lệnh: node setup-mongodb.js
 // ==============================================================================
 
@@ -50,7 +50,7 @@ async function setupDatabase() {
     await db.collection("users").deleteMany({});
     await db.collection("users").insertMany([
       {
-        name: "Ban Quản Trị Sắc Việt",
+        name: "Ban Quản Trị Hồn Y Đất Việt",
         email: "admin@sacviet.vn",
         password: hashedPassword,
         role: "admin",

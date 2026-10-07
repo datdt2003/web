@@ -2,6 +2,7 @@ import mongoose from "mongoose"
 import dns from "dns"
 
 try {
+  dns.setDefaultResultOrder?.("ipv4first")
   dns.setServers(["8.8.8.8", "1.1.1.1"])
 } catch {
   // Ignored in restricted environments
@@ -28,6 +29,11 @@ if (!global.mongooseCache) {
 }
 
 export async function connectDB(): Promise<typeof mongoose> {
+  try {
+    dns.setDefaultResultOrder?.("ipv4first")
+    dns.setServers(["8.8.8.8", "1.1.1.1"])
+  } catch {}
+
   if (cached.conn) {
     return cached.conn
   }

@@ -995,7 +995,7 @@ db.products.insertMany([
 // 3. Tạo tài khoản Quản trị viên (Mật khẩu: Admin@123)
 db.users.drop();
 db.users.insertOne({
-  name: "Ban Quản Trị Sắc Việt",
+  name: "Ban Quản Trị Hồn Y Đất Việt",
   email: "admin@sacviet.vn",
   password: "$2b$10$JmAL6S41L./IH9Bo8omcBuGvImjBPOu6/RBhaxcYvf6j.JvxtI/te",
   role: "admin",

@@ -74,7 +74,7 @@ export function ContactBubble() {
                     Facebook
                   </span>
                   <p className="truncate text-sm font-semibold text-foreground">
-                    Ghé thăm Facebook
+                    Hồn Y Đất Việt
                   </p>
                 </div>
               </div>

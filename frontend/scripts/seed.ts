@@ -66,7 +66,7 @@ async function runSeed() {
     console.log("Creating default administrator account...")
     const hashedPassword = await bcrypt.hash(adminPassword, 10)
     await User.create({
-      name: "Ban Quản Trị Sắc Việt",
+      name: "Ban Quản Trị Hồn Y Đất Việt",
       email: adminEmail,
       password: hashedPassword,
       role: "admin",

@@ -26,7 +26,7 @@ db.products.insertMany(${JSON.stringify(products, null, 2)});
 // 3. Tạo tài khoản Quản trị viên (Mật khẩu: Admin@123)
 db.users.drop();
 db.users.insertOne({
-  name: "Ban Quản Trị Sắc Việt",
+  name: "Ban Quản Trị Hồn Y Đất Việt",
   email: "admin@sacviet.vn",
   password: "${hashed}",
   role: "admin",
