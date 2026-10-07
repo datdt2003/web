@@ -67,7 +67,7 @@ const values = [
 const stats = [
   { value: "54", label: "Dân tộc anh em" },
   { value: "8", label: "Nhóm ngôn ngữ" },
-  { value: "63", label: "Tỉnh thành" },
+  { value: "34", label: "Tỉnh thành" },
   { value: "100M+", label: "Dân số" },
 ]
 
@@ -197,7 +197,7 @@ export default function GioiThieuPage() {
             <span className="font-semibold text-foreground">{ethnicGroups.length} dân tộc</span> với
             tổng dân số hơn{" "}
             <span className="font-semibold text-foreground">
-              {totalPopulation.toLocaleString("vi-VN")}
+              102.323.072
             </span>{" "}
             người trên cả nước.
           </p>

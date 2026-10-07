@@ -48,7 +48,7 @@ export const ethnicGroups: Ethnic[] = [
     altNames: "Việt",
     region: "bac",
     regions: ["bac", "trung", "nam"],
-    population: 82085826,
+    population: 88203816,
     languageFamily: "Việt – Mường",
     image: IMG.kinh,
     blurb: "Dân tộc đa số, cư trú khắp cả nước, cái nôi của nền văn minh lúa nước sông Hồng.",
