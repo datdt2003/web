@@ -2275,6 +2275,7 @@ export default function AdminPage() {
                         onChange={(e) => {
                           const file = e.target.files?.[0]
                           if (file) handleFileUpload(file, "image")
+                          e.target.value = ""
                         }}
                       />
                       <Button
@@ -2409,6 +2410,7 @@ export default function AdminPage() {
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (file) handleFileUpload(file, "video")
+                      e.target.value = ""
                     }}
                   />
                   <div className="flex flex-wrap items-center gap-2">

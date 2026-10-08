@@ -16,6 +16,7 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs';
 import { Response } from 'express';
+import { GridFSBucket } from 'mongodb';
 
 // Đảm bảo thư mục uploads tồn tại an toàn trong mọi môi trường (kể cả Serverless read-only)
 const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
@@ -84,18 +85,19 @@ export class UploadController {
       if (this.connection?.db && file.path && fs.existsSync(file.path)) {
         const buffer = fs.readFileSync(file.path);
         if (buffer.length > 15 * 1024 * 1024) {
-          const bucket = new (this.connection as any).mongo.GridFSBucket(this.connection.db, {
+          const bucket = new GridFSBucket(this.connection.db, {
             bucketName: 'uploads_fs',
           });
           await new Promise<void>((resolve, reject) => {
             const uploadStream = bucket.openUploadStream(file.filename, {
               contentType: file.mimetype,
               metadata: {
+                contentType: file.mimetype,
                 originalName: file.originalname,
                 size: file.size,
                 createdAt: new Date(),
               },
-            });
+            } as any);
             uploadStream.on('error', reject);
             uploadStream.on('finish', () => resolve());
             uploadStream.end(buffer);
@@ -157,7 +159,7 @@ export class UploadController {
         }
 
         // Kiểm tra trong GridFS 'uploads_fs'
-        const bucket = new (this.connection as any).mongo.GridFSBucket(this.connection.db, {
+        const bucket = new GridFSBucket(this.connection.db, {
           bucketName: 'uploads_fs',
         });
         const fsFiles = await bucket.find({ filename }).toArray();

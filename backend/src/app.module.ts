@@ -25,8 +25,9 @@ import { AppController } from './app.controller';
       useFactory: (config: ConfigService) => ({
         uri:
           config.get<string>('MONGODB_URI') ||
-          'mongodb+srv://duongtiendat0012_db_user:honydatviet123@honydatviet.nnfadap.mongodb.net/sac_viet?retryWrites=true&w=majority',
+          'mongodb://duongtiendat0012_db_user:honydatviet123@ac-lgb9rkt-shard-00-00.nnfadap.mongodb.net:27017,ac-lgb9rkt-shard-00-01.nnfadap.mongodb.net:27017,ac-lgb9rkt-shard-00-02.nnfadap.mongodb.net:27017/sac_viet?ssl=true&authSource=admin&retryWrites=true&w=majority',
         dbName: 'sac_viet',
+        serverSelectionTimeoutMS: 5000,
       }),
     }),
 

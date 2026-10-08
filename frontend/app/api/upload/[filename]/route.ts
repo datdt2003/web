@@ -139,26 +139,29 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       }
     }
 
-    // 3. Fallback an toàn nếu file cũ bị mất: Trả về ảnh mặc định thay vì trả về 404 gây vỡ ảnh
-    const fallbackCandidates = [
-      path.join(process.cwd(), "public", "images", "ethnic-kinh.png"),
-      path.join(process.cwd(), "public", "placeholder.svg"),
-    ]
+    // 3. Fallback: Chỉ trả về ảnh mặc định cho các file ảnh (tránh trả về PNG cho file video gây lỗi trình phát)
+    const isVideo = [".mp4", ".webm", ".ogg", ".mov"].includes(path.extname(filename).toLowerCase())
+    if (!isVideo) {
+      const fallbackCandidates = [
+        path.join(process.cwd(), "public", "images", "ethnic-kinh.png"),
+        path.join(process.cwd(), "public", "placeholder.svg"),
+      ]
 
-    for (const fb of fallbackCandidates) {
-      if (fs.existsSync(fb)) {
-        const buffer = fs.readFileSync(fb)
-        const isSvg = fb.endsWith(".svg")
-        return new NextResponse(buffer, {
-          status: 200,
-          headers: {
-            "Content-Type": isSvg ? "image/svg+xml" : "image/png",
-            "Content-Length": buffer.length.toString(),
-            "Cache-Control": "public, max-age=60",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-          },
-        })
+      for (const fb of fallbackCandidates) {
+        if (fs.existsSync(fb)) {
+          const buffer = fs.readFileSync(fb)
+          const isSvg = fb.endsWith(".svg")
+          return new NextResponse(buffer, {
+            status: 200,
+            headers: {
+              "Content-Type": isSvg ? "image/svg+xml" : "image/png",
+              "Content-Length": buffer.length.toString(),
+              "Cache-Control": "public, max-age=60",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            },
+          })
+        }
       }
     }
 
