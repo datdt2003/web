@@ -12,26 +12,73 @@ function fmt(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`
 }
 
+export function parseVideoEmbedUrl(url?: string): { type: "youtube" | "drive" | "video"; src: string } | null {
+  if (!url || typeof url !== "string") return null
+  const trimmed = url.trim()
+  if (!trimmed) return null
+
+  // 1. YouTube
+  const ytMatch = trimmed.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|watch\?.+&v=))([\w-]{11})/
+  )
+  if (ytMatch && ytMatch[1]) {
+    return {
+      type: "youtube",
+      src: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?rel=0&autoplay=0`,
+    }
+  }
+
+  // 2. Google Drive
+  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
+  if (driveMatch && driveMatch[1]) {
+    return {
+      type: "drive",
+      src: `https://drive.google.com/file/d/${driveMatch[1]}/preview`,
+    }
+  }
+
+  // 3. Direct video (MP4, WebM, local upload)
+  return {
+    type: "video",
+    src: trimmed,
+  }
+}
+
 export function VideoPlayer({ poster, title, videoUrl }: { poster: string; title: string; videoUrl?: string }) {
-    if (videoUrl) {
-      return (
-        <div className="overflow-hidden rounded-2xl border border-border bg-black shadow-lg">
+  const embed = parseVideoEmbedUrl(videoUrl)
+
+  if (embed) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-border bg-black shadow-lg">
+        {embed.type === "youtube" || embed.type === "drive" ? (
+          <div className="relative aspect-video w-full bg-black">
+            <iframe
+              src={embed.src}
+              title={`Tư liệu văn hóa · Người ${title}`}
+              className="absolute inset-0 size-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        ) : (
           <video
             controls
             poster={poster || undefined}
             className="aspect-video w-full object-cover"
             preload="metadata"
+            playsInline
           >
-            <source src={videoUrl} />
+            <source src={embed.src} />
             Trình duyệt của bạn không hỗ trợ phát video.
           </video>
-          <div className="flex items-center justify-between gap-2 bg-card px-4 py-3">
-            <p className="text-sm font-medium text-foreground">Tư liệu văn hóa · Người {title}</p>
-            <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">HD</span>
-          </div>
+        )}
+        <div className="flex items-center justify-between gap-2 bg-card px-4 py-3">
+          <p className="text-sm font-medium text-foreground">Tư liệu văn hóa · Người {title}</p>
+          <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">HD</span>
         </div>
-      )
-    }
+      </div>
+    )
+  }
 	
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)

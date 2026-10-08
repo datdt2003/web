@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ethnicGroups, formatVND, products as defaultEthnicProducts } from "@/lib/ethnic-data"
 import { ImageCropperModal } from "@/components/image-cropper-modal"
+import { parseVideoEmbedUrl } from "@/components/video-player"
 
 const BACKEND_URL =
   (typeof window !== "undefined" &&
@@ -684,8 +685,13 @@ export default function AdminPage() {
     setCultureInput(ethnic.culture ? ethnic.culture.join(", ") : "")
   }
 
-  // Upload file (ảnh hoặc video) lên backend
+  // Upload file (ảnh hoặc video) lên máy chủ
   const handleFileUpload = async (file: File, type: "image" | "video") => {
+    if (type === "video" && file.size > 50 * 1024 * 1024) {
+      alert("File video quá lớn (> 50MB). Vui lòng chọn video dung lượng nhẹ hơn hoặc dán trực tiếp link YouTube/Drive vào ô bên dưới.")
+      return
+    }
+
     const uploadForm = new FormData()
     uploadForm.append("file", file)
 
@@ -693,14 +699,51 @@ export default function AdminPage() {
     else setUploadingVideo(true)
 
     try {
-      // Ưu tiên /api/upload của Next.js (lưu trực tiếp MongoDB Atlas, dùng URL relative)
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: uploadForm,
-      }).catch(() => fetch(`${BACKEND_URL}/api/upload`, { method: "POST", body: uploadForm }))
+      let res: Response | null = null
 
-      const data = await res.json()
-      if (res && res.ok && data.url) {
+      // 1. Thử qua Next.js API /api/upload
+      try {
+        res = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadForm,
+        })
+      } catch (err) {
+        console.warn("Lỗi gọi /api/upload:", err)
+      }
+
+      // 2. Nếu /api/upload không thành công hoặc lỗi (413/500), thử fallback sang backend
+      if (!res || !res.ok) {
+        try {
+          const backendRes = await fetch(`${BACKEND_URL}/api/upload`, {
+            method: "POST",
+            body: uploadForm,
+          })
+          if (backendRes.ok) {
+            res = backendRes
+          }
+        } catch (beErr) {
+          console.warn("Lỗi gọi backend /api/upload:", beErr)
+        }
+      }
+
+      if (!res) {
+        throw new Error("Không thể kết nối đến máy chủ tải file. Vui lòng kiểm tra kết nối mạng.")
+      }
+
+      let data: any = null
+      const text = await res.text()
+      try {
+        data = JSON.parse(text)
+      } catch {
+        if (res.status === 413) {
+          throw new Error(
+            "File video vượt quá giới hạn tải lên trực tiếp của máy chủ (tối đa 4.5MB). Bạn có thể dán trực tiếp đường link video YouTube hoặc Google Drive vào ô bên dưới (khuyên dùng, không giới hạn dung lượng)."
+          )
+        }
+        throw new Error(text || `Máy chủ phản hồi mã lỗi ${res.status}`)
+      }
+
+      if (res.ok && data?.url) {
         const finalUrl = normalizeUploadUrl(data.url)
         if (type === "image") {
           setFormData((prev) => ({ ...prev, image: finalUrl }))
@@ -710,11 +753,25 @@ export default function AdminPage() {
           setToastMessage("Tải video mới lên thành công!")
         }
       } else {
-        alert(data?.error || data?.message || "Tải file lên thất bại.")
+        const errorMsg = data?.message || data?.error || "Tải file lên thất bại."
+        if (type === "video" && (res.status === 413 || errorMsg.includes("413") || errorMsg.includes("large") || errorMsg.includes("size"))) {
+          alert(
+            "File video quá lớn đối với giới hạn máy chủ tải trực tiếp.\n\n💡 Gợi ý tốt nhất: Bạn có thể dán trực tiếp link video YouTube (hoặc Drive) vào ô bên dưới để phát video chất lượng cao mà không bị giới hạn dung lượng!"
+          )
+        } else {
+          alert(errorMsg)
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Upload error:", err)
-      alert("Không thể tải file lên. Hãy kiểm tra kết nối.")
+      if (type === "video") {
+        alert(
+          err?.message ||
+            "Không thể tải video lên máy chủ.\n\n💡 Bạn có thể dán link video YouTube (hoặc Google Drive, link MP4) vào ô bên dưới để phát video ngay lập tức!"
+        )
+      } else {
+        alert(err?.message || "Không thể tải file lên. Hãy kiểm tra kết nối.")
+      }
     } finally {
       if (type === "image") setUploadingImage(false)
       else setUploadingVideo(false)
@@ -727,13 +784,16 @@ export default function AdminPage() {
     if (!confirm(`Bạn có chắc chắn muốn gỡ video của dân tộc ${editingEthnic.name}?`)) return
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/ethnic/${editingEthnic.slug}/video`, {
+      setFormData((prev) => ({ ...prev, videoUrl: "" }))
+      await fetch(`/api/ethnic/${editingEthnic.slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoUrl: "" }),
+      }).catch(() => null)
+      await fetch(`${BACKEND_URL}/api/ethnic/${editingEthnic.slug}/video`, {
         method: "DELETE",
-      })
-      if (res.ok) {
-        setFormData((prev) => ({ ...prev, videoUrl: "" }))
-        setToastMessage(`Đã gỡ video của dân tộc ${editingEthnic.name}!`)
-      }
+      }).catch(() => null)
+      setToastMessage(`Đã gỡ video của dân tộc ${editingEthnic.name}!`)
     } catch {
       setFormData((prev) => ({ ...prev, videoUrl: "" }))
     }
@@ -2295,13 +2355,37 @@ export default function AdminPage() {
                   <div className="mt-3 space-y-2">
                     {/* Video preview */}
                     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
-                      <video
-                        controls
-                        src={formData.videoUrl}
-                        className="size-full object-cover"
-                      >
-                        Trình duyệt không hỗ trợ phát video này.
-                      </video>
+                      {(() => {
+                        const embed = parseVideoEmbedUrl(formData.videoUrl)
+                        if (!embed) {
+                          return (
+                            <div className="grid size-full place-items-center text-xs text-muted-foreground">
+                              Đường link video không hợp lệ
+                            </div>
+                          )
+                        }
+                        if (embed.type === "youtube" || embed.type === "drive") {
+                          return (
+                            <iframe
+                              src={embed.src}
+                              title="Xem thử video"
+                              className="size-full border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          )
+                        }
+                        return (
+                          <video
+                            controls
+                            src={embed.src}
+                            className="size-full object-cover"
+                            playsInline
+                          >
+                            Trình duyệt không hỗ trợ phát video này.
+                          </video>
+                        )
+                      })()}
                     </div>
                     <p className="font-mono text-xs text-muted-foreground line-clamp-1">
                       Link: {formData.videoUrl}
@@ -2311,23 +2395,23 @@ export default function AdminPage() {
                   <div className="mt-3 rounded-lg border border-dashed border-border bg-muted/40 p-4 text-center">
                     <Film className="mx-auto size-8 text-muted-foreground/60" />
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Dân tộc này chưa có video tư liệu. Bạn có thể tải video từ máy tính lên.
+                      Dân tộc này chưa có video tư liệu. Bạn có thể tải video từ máy tính hoặc dán link YouTube/Drive.
                     </p>
                   </div>
                 )}
 
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2.5">
                   <input
                     type="file"
                     ref={videoInputRef}
-                    accept="video/mp4,video/webm,video/ogg"
+                    accept="video/mp4,video/webm,video/ogg,video/quicktime"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (file) handleFileUpload(file, "video")
                     }}
                   />
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
@@ -2343,18 +2427,24 @@ export default function AdminPage() {
                       ) : (
                         <>
                           <Upload className="mr-1.5 size-3.5" />
-                          Tải video mới từ máy tính (MP4 / WebM)
+                          Tải video từ máy tính (MP4 / WebM)
                         </>
                       )}
                     </Button>
+                    <span className="text-xs text-muted-foreground">hoặc</span>
                   </div>
 
-                  <Input
-                    value={formData.videoUrl || ""}
-                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                    placeholder="Hoặc dán URL video trực tiếp (https://...mp4)"
-                    className="text-xs"
-                  />
+                  <div className="space-y-1">
+                    <Input
+                      value={formData.videoUrl || ""}
+                      onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                      placeholder="Dán link YouTube (https://youtu.be/...), Google Drive hoặc link file (.mp4)"
+                      className="text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      💡 <strong>Khuyên dùng:</strong> Dán link YouTube (phim tài liệu VTV5, video văn hóa,...) để phát độ nét cao mượt mà không bị giới hạn dung lượng lưu trữ.
+                    </p>
+                  </div>
                 </div>
               </div>
 

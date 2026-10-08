@@ -43,24 +43,48 @@ export async function POST(request: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    const contentType = file.type || "image/jpeg"
+    const contentType = file.type || "application/octet-stream"
 
-    // Lưu file trực tiếp vào MongoDB Atlas collection 'uploads'
-    const uploadsCol = db.collection("uploads")
-    await uploadsCol.updateOne(
-      { filename },
-      {
-        $set: {
-          filename,
-          originalName,
-          contentType,
-          size: buffer.length,
-          data: buffer,
-          createdAt: new Date(),
+    // Kiểm tra kích thước: nếu <= 15MB lưu trực tiếp vào collection 'uploads'
+    // Nếu > 15MB, dùng GridFS để không vi phạm giới hạn 16MB BSON của MongoDB
+    if (buffer.length > 15 * 1024 * 1024) {
+      try {
+        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: "uploads_fs" })
+        await new Promise<void>((resolve, reject) => {
+          const uploadStream = bucket.openUploadStream(filename, {
+            contentType,
+            metadata: {
+              contentType,
+              originalName,
+              size: buffer.length,
+              createdAt: new Date(),
+            },
+          } as any)
+          uploadStream.on("error", reject)
+          uploadStream.on("finish", () => resolve())
+          uploadStream.end(buffer)
+        })
+      } catch (gridFsErr: any) {
+        console.error("Lỗi khi lưu file vào GridFS:", gridFsErr)
+        throw new Error("Không thể lưu file dung lượng lớn vào cơ sở dữ liệu: " + gridFsErr.message)
+      }
+    } else {
+      const uploadsCol = db.collection("uploads")
+      await uploadsCol.updateOne(
+        { filename },
+        {
+          $set: {
+            filename,
+            originalName,
+            contentType,
+            size: buffer.length,
+            data: buffer,
+            createdAt: new Date(),
+          },
         },
-      },
-      { upsert: true }
-    )
+        { upsert: true }
+      )
+    }
 
     // Trả về đường dẫn relative để hoạt động chuẩn trên mọi thiết bị và domain
     const relativeUrl = `/api/upload/${filename}`

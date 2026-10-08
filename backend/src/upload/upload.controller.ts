@@ -79,24 +79,43 @@ export class UploadController {
       throw new BadRequestException('Không tìm thấy file tải lên');
     }
 
-    // Đồng bộ lưu file vào MongoDB Atlas collection 'uploads' để mọi thiết bị/máy tính đều xem được
+    // Đồng bộ lưu file vào MongoDB Atlas collection 'uploads' hoặc GridFS 'uploads_fs' để mọi thiết bị đều xem được
     try {
       if (this.connection?.db && file.path && fs.existsSync(file.path)) {
         const buffer = fs.readFileSync(file.path);
-        await this.connection.db.collection('uploads').updateOne(
-          { filename: file.filename },
-          {
-            $set: {
-              filename: file.filename,
-              originalName: file.originalname,
+        if (buffer.length > 15 * 1024 * 1024) {
+          const bucket = new (this.connection as any).mongo.GridFSBucket(this.connection.db, {
+            bucketName: 'uploads_fs',
+          });
+          await new Promise<void>((resolve, reject) => {
+            const uploadStream = bucket.openUploadStream(file.filename, {
               contentType: file.mimetype,
-              size: file.size,
-              data: buffer,
-              createdAt: new Date(),
+              metadata: {
+                originalName: file.originalname,
+                size: file.size,
+                createdAt: new Date(),
+              },
+            });
+            uploadStream.on('error', reject);
+            uploadStream.on('finish', () => resolve());
+            uploadStream.end(buffer);
+          });
+        } else {
+          await this.connection.db.collection('uploads').updateOne(
+            { filename: file.filename },
+            {
+              $set: {
+                filename: file.filename,
+                originalName: file.originalname,
+                contentType: file.mimetype,
+                size: file.size,
+                data: buffer,
+                createdAt: new Date(),
+              },
             },
-          },
-          { upsert: true },
-        );
+            { upsert: true },
+          );
+        }
       }
     } catch (dbErr) {
       console.warn('Lỗi lưu upload vào MongoDB Atlas:', dbErr);
@@ -129,6 +148,32 @@ export class UploadController {
           res.set({
             'Content-Type': fileDoc.contentType || 'image/jpeg',
             'Content-Length': buffer.length.toString(),
+            'Accept-Ranges': 'bytes',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Access-Control-Allow-Origin': '*',
+            'Cross-Origin-Resource-Policy': 'cross-origin',
+          });
+          return res.send(buffer);
+        }
+
+        // Kiểm tra trong GridFS 'uploads_fs'
+        const bucket = new (this.connection as any).mongo.GridFSBucket(this.connection.db, {
+          bucketName: 'uploads_fs',
+        });
+        const fsFiles = await bucket.find({ filename }).toArray();
+        if (fsFiles.length > 0) {
+          const fsFile = fsFiles[0];
+          const downloadStream = bucket.openDownloadStreamByName(filename);
+          const chunks: Buffer[] = [];
+          for await (const chunk of downloadStream) {
+            chunks.push(chunk as Buffer);
+          }
+          const buffer = Buffer.concat(chunks);
+          const contentType = (fsFile as any).contentType || (fsFile.metadata as any)?.contentType || 'video/mp4';
+          res.set({
+            'Content-Type': contentType,
+            'Content-Length': buffer.length.toString(),
+            'Accept-Ranges': 'bytes',
             'Cache-Control': 'public, max-age=31536000, immutable',
             'Access-Control-Allow-Origin': '*',
             'Cross-Origin-Resource-Policy': 'cross-origin',
@@ -146,6 +191,7 @@ export class UploadController {
       res.set({
         'Access-Control-Allow-Origin': '*',
         'Cross-Origin-Resource-Policy': 'cross-origin',
+        'Accept-Ranges': 'bytes',
       });
       return res.sendFile(localPath);
     }
