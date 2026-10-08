@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
+import { GridFSBucket } from "mongodb"
 import path from "path"
 
 export const dynamic = "force-dynamic"
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Nếu > 15MB, dùng GridFS để không vi phạm giới hạn 16MB BSON của MongoDB
     if (buffer.length > 15 * 1024 * 1024) {
       try {
-        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: "uploads_fs" })
+        const bucket = new GridFSBucket(db, { bucketName: "uploads_fs" })
         await new Promise<void>((resolve, reject) => {
           const uploadStream = bucket.openUploadStream(filename, {
             contentType,

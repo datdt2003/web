@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/mongodb"
+import { GridFSBucket } from "mongodb"
 import fs from "fs"
 import path from "path"
 
 export const dynamic = "force-dynamic"
-
-type RouteContext = {
-  params: Promise<{ filename: string }>
-}
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -20,7 +17,7 @@ export async function OPTIONS() {
   })
 }
 
-function getMimeType(filename: string, fallback: string = "image/jpeg") {
+function getMimeType(filename: string, fallback: string = "image/jpeg"): string {
   const ext = path.extname(filename).toLowerCase()
   if (ext === ".mp4") return "video/mp4"
   if (ext === ".webm") return "video/webm"
@@ -34,10 +31,11 @@ function getMimeType(filename: string, fallback: string = "image/jpeg") {
   return fallback
 }
 
-function createMediaResponse(buffer: Buffer, rawContentType: string, request: NextRequest, filename: string) {
-  const contentType = rawContentType && rawContentType !== "application/octet-stream"
-    ? rawContentType
-    : getMimeType(filename, rawContentType)
+function createMediaResponse(buffer: Buffer, rawContentType: string, request: NextRequest, filename: string): NextResponse {
+  const contentType =
+    rawContentType && rawContentType !== "application/octet-stream"
+      ? rawContentType
+      : getMimeType(filename, rawContentType)
   const range = request.headers.get("range")
   const totalLength = buffer.length
 
@@ -56,7 +54,7 @@ function createMediaResponse(buffer: Buffer, rawContentType: string, request: Ne
     }
 
     const chunk = buffer.subarray(start, end + 1)
-    return new NextResponse(chunk, {
+    return new NextResponse(new Uint8Array(chunk), {
       status: 206,
       headers: {
         "Content-Range": `bytes ${start}-${end}/${totalLength}`,
@@ -70,7 +68,7 @@ function createMediaResponse(buffer: Buffer, rawContentType: string, request: Ne
     })
   }
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
       "Content-Type": contentType,
@@ -83,7 +81,14 @@ function createMediaResponse(buffer: Buffer, rawContentType: string, request: Ne
   })
 }
 
-export async function GET(request: NextRequest, { params }: RouteContext) {
+type RouteContext = {
+  params: Promise<{ filename: string }>
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: RouteContext
+) {
   try {
     const { filename } = await params
 
@@ -106,17 +111,21 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         }
 
         // Nếu không có trong 'uploads', tìm trong GridFS 'uploads_fs' (dành cho file > 15MB)
-        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: "uploads_fs" })
+        const bucket = new GridFSBucket(db, { bucketName: "uploads_fs" })
         const fsFiles = await bucket.find({ filename }).toArray()
         if (fsFiles.length > 0) {
           const fsFile = fsFiles[0]
           const downloadStream = bucket.openDownloadStreamByName(filename)
-          const chunks: Buffer[] = []
-          for await (const chunk of downloadStream) {
-            chunks.push(chunk as Buffer)
-          }
-          const buffer = Buffer.concat(chunks)
-          const contentType = (fsFile as any).contentType || (fsFile.metadata as any)?.contentType || getMimeType(filename)
+          const buffer = await new Promise<Buffer>((resolve, reject) => {
+            const chunks: Buffer[] = []
+            downloadStream.on("data", (chunk: any) => chunks.push(Buffer.from(chunk)))
+            downloadStream.on("error", reject)
+            downloadStream.on("end", () => resolve(Buffer.concat(chunks)))
+          })
+          const contentType =
+            (fsFile as any).contentType ||
+            (fsFile.metadata as any)?.contentType ||
+            getMimeType(filename)
           return createMediaResponse(buffer, contentType, request, filename)
         }
       }
@@ -151,7 +160,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         if (fs.existsSync(fb)) {
           const buffer = fs.readFileSync(fb)
           const isSvg = fb.endsWith(".svg")
-          return new NextResponse(buffer, {
+          return new NextResponse(new Uint8Array(buffer), {
             status: 200,
             headers: {
               "Content-Type": isSvg ? "image/svg+xml" : "image/png",
