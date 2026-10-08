@@ -89,10 +89,10 @@ export default function GioiThieuPage() {
             Về dự án Hồn Y Đất Việt
           </span>
           <h1 className="mt-5 text-balance font-serif text-4xl font-bold leading-tight md:text-5xl">
-            Số hóa di sản của 54 dân tộc anh em
+            Số hóa di sản của 54 câu chuyện văn hóa
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-pretty leading-relaxed text-primary-foreground/90 md:text-lg">
-            Hồn Y Đất Việt là một dự án văn hóa phi lợi nhuận, ra đời với mong muốn lưu
+            Hồn Y Đất Việt là một dự án văn sáng tạo, ra đời với mong muốn lưu
             giữ, tôn vinh và lan tỏa vẻ đẹp bản sắc của cộng đồng các dân tộc trên
             khắp dải đất hình chữ S.
           </p>
