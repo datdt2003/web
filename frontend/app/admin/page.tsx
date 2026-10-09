@@ -173,6 +173,7 @@ export default function AdminPage() {
     category: "Thủ công",
     description: "",
     inStock: true,
+    forSale: true,
   })
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false)
   const [uploadingEditProductImage, setUploadingEditProductImage] = useState(false)
@@ -205,6 +206,8 @@ export default function AdminPage() {
     craft: "",
     culturalValue: "",
     description: "",
+    forSale: false,
+    price: "",
   })
   const [uploadingEthnicProdImg, setUploadingEthnicProdImg] = useState(false)
   const [savingEthnicProd, setSavingEthnicProd] = useState(false)
@@ -476,12 +479,13 @@ export default function AdminPage() {
     setEditingProduct(product)
     setEditProductForm({
       name: product.name,
-      price: String(product.price),
+      price: product.price ? String(product.price) : "",
       image: product.image,
       ethnicSlug: product.ethnicSlug || "",
       category: product.category || "Thủ công",
       description: product.description || "",
       inStock: Boolean(product.inStock),
+      forSale: product.forSale ?? true,
     })
   }
 
@@ -524,21 +528,29 @@ export default function AdminPage() {
     if (!editingProduct) return
 
     const ethnicValue = editProductForm.ethnicSlug.trim()
-    if (!editProductForm.name || !editProductForm.price || !editProductForm.image || !ethnicValue) {
-      alert("Vui lòng điền đầy đủ tên sản phẩm, giá, ảnh và dân tộc.")
+    const isForSale = Boolean(editProductForm.forSale)
+    const numericPrice = isForSale ? Math.max(0, Number(editProductForm.price) || 0) : 0
+
+    if (!editProductForm.name || !editProductForm.image || !ethnicValue) {
+      alert("Vui lòng điền đầy đủ tên sản phẩm, ảnh và dân tộc.")
+      return
+    }
+
+    if (isForSale && numericPrice <= 0) {
+      alert("Vui lòng nhập giá bán hợp lệ (> 0 VNĐ) khi bật chế độ Có bán.")
       return
     }
 
     setIsUpdatingProduct(true)
     const payload = {
       name: editProductForm.name,
-      price: Number(editProductForm.price),
+      price: numericPrice,
       image: editProductForm.image,
       ethnicSlug: ethnicValue,
       category: editProductForm.category || "Thủ công",
       description: editProductForm.description,
       inStock: Boolean(editProductForm.inStock),
-      forSale: true,
+      forSale: isForSale,
     }
 
     try {
@@ -886,6 +898,8 @@ export default function AdminPage() {
       craft: "",
       culturalValue: "",
       description: "",
+      forSale: false,
+      price: "",
     })
     setEthnicProductFormOpen(true)
   }
@@ -900,6 +914,8 @@ export default function AdminPage() {
       craft: prod.craft || "",
       culturalValue: prod.culturalValue || "",
       description: prod.description || "",
+      forSale: Boolean(prod.forSale),
+      price: prod.price ? String(prod.price) : "",
     })
     setEthnicProductFormOpen(true)
   }
@@ -940,6 +956,14 @@ export default function AdminPage() {
       return
     }
 
+    const isForSale = Boolean(ethnicProductForm.forSale)
+    const numericPrice = isForSale ? Math.max(0, Number(ethnicProductForm.price) || 0) : 0
+
+    if (isForSale && numericPrice <= 0) {
+      alert("Vui lòng nhập giá bán hợp lệ (> 0 VNĐ) khi chọn chế độ Có bán sản phẩm.")
+      return
+    }
+
     setSavingEthnicProd(true)
     try {
       const payload = {
@@ -951,8 +975,8 @@ export default function AdminPage() {
         craft: ethnicProductForm.craft.trim(),
         culturalValue: ethnicProductForm.culturalValue.trim(),
         description: ethnicProductForm.description.trim(),
-        price: 0,
-        forSale: false,
+        price: numericPrice,
+        forSale: isForSale,
         inStock: true,
       }
 
@@ -1789,7 +1813,13 @@ export default function AdminPage() {
                           </div>
 
                           <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="font-semibold text-primary">{formatVND(product.price)}</span>
+                            {product.forSale ? (
+                              <span className="font-semibold text-primary">{formatVND(product.price)}</span>
+                            ) : (
+                              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800">
+                                🏛️ Chỉ trưng bày
+                              </span>
+                            )}
                             <span
                               className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                                 product.inStock
@@ -2582,6 +2612,100 @@ export default function AdminPage() {
                         </div>
                       </div>
 
+                      {/* Chế độ hiển thị & Bán hàng */}
+                      <div className="space-y-2.5 rounded-xl border border-border bg-muted/20 p-3">
+                        <label className="text-xs font-semibold text-foreground">
+                          Chế độ hiển thị &amp; Bán hàng <span className="text-destructive">*</span>
+                        </label>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEthnicProductForm((prev) => ({ ...prev, forSale: false, price: "" }))
+                            }
+                            className={`flex flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-all ${
+                              !ethnicProductForm.forSale
+                                ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                              <Info className="size-3.5 text-primary" />
+                              Chỉ là thông tin / Trưng bày
+                            </span>
+                            <span className="text-[11px] text-muted-foreground leading-snug">
+                              Giới thiệu văn hóa, không bán, không có nút thêm vào giỏ.
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEthnicProductForm((prev) => ({ ...prev, forSale: true }))
+                            }
+                            className={`flex flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-all ${
+                              ethnicProductForm.forSale
+                                ? "border-emerald-600 bg-emerald-500/10 text-emerald-800 shadow-sm"
+                                : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                              <ShoppingCart className="size-3.5 text-emerald-600" />
+                              Có bán sản phẩm
+                            </span>
+                            <span className="text-[11px] text-muted-foreground leading-snug">
+                              Hiển thị giá bán và nút &quot;Thêm vào giỏ&quot; cho khách mua.
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* Ô nhập & điều chỉnh giá khi chọn Có bán */}
+                        {ethnicProductForm.forSale && (
+                          <div className="mt-2.5 space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-semibold text-foreground">
+                                Giá bán sản phẩm (VNĐ) <span className="text-destructive">*</span>
+                              </label>
+                              {ethnicProductForm.price && Number(ethnicProductForm.price) > 0 && (
+                                <span className="font-serif text-xs font-bold text-emerald-700">
+                                  Hiển thị: {formatVND(Number(ethnicProductForm.price))}
+                                </span>
+                              )}
+                            </div>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="1000"
+                              value={ethnicProductForm.price}
+                              onChange={(e) =>
+                                setEthnicProductForm((prev) => ({ ...prev, price: e.target.value }))
+                              }
+                              placeholder="Nhập giá bán, ví dụ: 250000"
+                              className="h-8 text-xs bg-background"
+                            />
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-[11px] text-muted-foreground">Chọn nhanh:</span>
+                              {[50000, 100000, 200000, 350000, 500000, 1000000].map((preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() =>
+                                    setEthnicProductForm((prev) => ({ ...prev, price: String(preset) }))
+                                  }
+                                  className={`rounded border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                                    ethnicProductForm.price === String(preset)
+                                      ? "border-emerald-600 bg-emerald-600 text-white font-semibold"
+                                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                  }`}
+                                >
+                                  {formatVND(preset)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Ảnh minh họa sản phẩm */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
@@ -2822,6 +2946,21 @@ export default function AdminPage() {
                               </span>
                             </div>
 
+                            {/* Badge Bán / Trưng bày */}
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                              {p.forSale ? (
+                                <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">
+                                  <ShoppingCart className="size-2.5" />
+                                  Có bán · {formatVND(p.price || 0)}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
+                                  <Info className="size-2.5" />
+                                  Chỉ trưng bày (thông tin)
+                                </span>
+                              )}
+                            </div>
+
                             {p.origin && (
                               <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
                                 <MapPin className="size-3 shrink-0 text-primary" />
@@ -2856,7 +2995,7 @@ export default function AdminPage() {
                                   handleOpenEditEthnicProduct({
                                     id: p.id,
                                     name: p.name,
-                                    price: 0,
+                                    price: p.price || 0,
                                     image: p.image || "/placeholder.svg",
                                     ethnicSlug: p.ethnicSlug,
                                     category: p.category || "Thủ công",
@@ -2864,8 +3003,8 @@ export default function AdminPage() {
                                     origin: p.origin || "",
                                     craft: p.craft || "",
                                     culturalValue: p.culturalValue || "",
-                                    forSale: false,
-                                    inStock: true,
+                                    forSale: Boolean(p.forSale),
+                                    inStock: p.inStock ?? true,
                                   })
                                 }
                                 className="h-6 gap-1 px-2 text-[10px] font-medium text-primary hover:bg-primary/10"
@@ -2882,12 +3021,12 @@ export default function AdminPage() {
                                   handleDeleteEthnicProduct({
                                     id: p.id,
                                     name: p.name,
-                                    price: 0,
+                                    price: p.price || 0,
                                     image: p.image || "/placeholder.svg",
                                     ethnicSlug: p.ethnicSlug,
                                     category: p.category || "Thủ công",
-                                    forSale: false,
-                                    inStock: true,
+                                    forSale: Boolean(p.forSale),
+                                    inStock: p.inStock ?? true,
                                   })
                                 }
                                 className="h-6 gap-1 px-2 text-[10px] font-medium text-destructive hover:bg-destructive/10"
@@ -2982,15 +3121,56 @@ export default function AdminPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Giá bán (VNĐ) *</label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={editProductForm.price}
-                  onChange={(e) => setEditProductForm((prev) => ({ ...prev, price: e.target.value }))}
-                  required
-                />
+                <label className="text-xs font-semibold text-foreground">Chế độ hiển thị &amp; Bán hàng *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditProductForm((prev) => ({ ...prev, forSale: false, price: "0" }))}
+                    className={`flex items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-semibold transition-all ${
+                      !editProductForm.forSale
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <Info className="size-3.5" />
+                    Chỉ là thông tin / Trưng bày
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditProductForm((prev) => ({ ...prev, forSale: true }))}
+                    className={`flex items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-semibold transition-all ${
+                      editProductForm.forSale
+                        ? "border-emerald-600 bg-emerald-500/10 text-emerald-800 shadow-sm"
+                        : "border-border text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <ShoppingCart className="size-3.5 text-emerald-600" />
+                    Có bán sản phẩm
+                  </button>
+                </div>
               </div>
+
+              {editProductForm.forSale && (
+                <div className="space-y-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-foreground">Giá bán (VNĐ) *</label>
+                    {editProductForm.price && Number(editProductForm.price) > 0 && (
+                      <span className="font-serif text-xs font-bold text-emerald-700">
+                        {formatVND(Number(editProductForm.price))}
+                      </span>
+                    )}
+                  </div>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={editProductForm.price}
+                    onChange={(e) => setEditProductForm((prev) => ({ ...prev, price: e.target.value }))}
+                    placeholder="Nhập giá bán"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
