@@ -194,7 +194,37 @@ export default function AdminPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingVideo, setUploadingVideo] = useState(false)
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  // Toast Notification State
+  const [toast, setToast] = useState<{
+    message: string
+    type: "success" | "error" | "info"
+  } | null>(null)
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ message, type })
+  }
+
+  const setToastMessage = (msg: string | null) => {
+    if (msg) showToast(msg, "success")
+    else setToast(null)
+  }
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => {
+      setToast(null)
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  // Confirm delete ethnic product modal state
+  const [confirmDeleteEthnicProduct, setConfirmDeleteEthnicProduct] = useState<ProductItem | null>(null)
+  const [isDeletingEthnicProd, setIsDeletingEthnicProd] = useState(false)
+
+  // Confirm remove video modal state
+  const [confirmRemoveVideoOpen, setConfirmRemoveVideoOpen] = useState(false)
+  const [isRemovingVideo, setIsRemovingVideo] = useState(false)
 
   // --- Ethnic Traditional Products Management (trong modal sửa dân tộc) ---
   const [ethnicProductFormOpen, setEthnicProductFormOpen] = useState(false)
@@ -249,7 +279,7 @@ export default function AdminPage() {
     aspectRatio = 1
   ) => {
     if (!imageUrl) {
-      alert("Vui lòng tải hoặc dán link ảnh trước khi căn chỉnh!")
+      showToast("Vui lòng tải hoặc dán link ảnh trước khi căn chỉnh!", "info")
       return
     }
     setCropperModal({
@@ -394,11 +424,11 @@ export default function AdminPage() {
         setProductForm((prev) => ({ ...prev, image: finalUrl }))
         setToastMessage("Tải ảnh sản phẩm thành công! Bạn có thể nhấn 'Căn chỉnh ảnh' để điều chỉnh khung hình.")
       } else {
-        alert(data?.error || data?.message || "Tải ảnh thất bại.")
+        showToast(data?.error || data?.message || "Tải ảnh thất bại.", "error")
       }
     } catch (err) {
       console.error("Upload sản phẩm error:", err)
-      alert("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối.")
+      showToast("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối.", "error")
     } finally {
       event.target.value = ""
     }
@@ -419,7 +449,7 @@ export default function AdminPage() {
     }
 
     if (!payload.name || !payload.price) {
-      alert("Vui lòng nhập tên sản phẩm và giá bán.")
+      showToast("Vui lòng nhập tên sản phẩm và giá bán.", "error")
       return
     }
 
@@ -445,7 +475,7 @@ export default function AdminPage() {
       resetProductForm()
     } catch (err) {
       console.error("Create product error:", err)
-      alert(err instanceof Error ? err.message : "Không thể đăng sản phẩm.")
+      showToast(err instanceof Error ? err.message : "Không thể đăng sản phẩm.", "error")
     } finally {
       setSubmittingProduct(false)
     }
@@ -469,7 +499,7 @@ export default function AdminPage() {
       setConfirmDeleteProduct(null)
     } catch (err) {
       console.error("Delete product error:", err)
-      alert(err instanceof Error ? err.message : "Không thể gỡ sản phẩm.")
+      showToast(err instanceof Error ? err.message : "Không thể gỡ sản phẩm.", "error")
     } finally {
       setDeletingProductId(null)
     }
@@ -512,11 +542,11 @@ export default function AdminPage() {
         setEditProductForm((prev) => ({ ...prev, image: finalUrl }))
         setToastMessage("Tải ảnh mới cho sản phẩm thành công! Bạn có thể nhấn 'Căn chỉnh ảnh' để điều chỉnh.")
       } else {
-        alert(data?.error || data?.message || "Tải ảnh thất bại.")
+        showToast(data?.error || data?.message || "Tải ảnh thất bại.", "error")
       }
     } catch (err) {
       console.error("Upload edit product image error:", err)
-      alert("Không thể upload ảnh mới. Hãy kiểm tra kết nối backend.")
+      showToast("Không thể upload ảnh mới. Hãy kiểm tra kết nối backend.", "error")
     } finally {
       setUploadingEditProductImage(false)
       event.target.value = ""
@@ -533,12 +563,12 @@ export default function AdminPage() {
     const numericPrice = isForSale ? Math.max(0, Number(editProductForm.price) || 0) : 0
 
     if (!editProductForm.name || !editProductForm.image || !ethnicValue) {
-      alert("Vui lòng điền đầy đủ tên sản phẩm, ảnh và dân tộc.")
+      showToast("Vui lòng điền đầy đủ tên sản phẩm, ảnh và dân tộc.", "error")
       return
     }
 
     if (isForSale && numericPrice <= 0) {
-      alert("Vui lòng nhập giá bán hợp lệ (> 0 VNĐ) khi bật chế độ Có bán.")
+      showToast("Vui lòng nhập giá bán hợp lệ (> 0 VNĐ) khi bật chế độ Có bán.", "error")
       return
     }
 
@@ -573,7 +603,7 @@ export default function AdminPage() {
       setEditingProduct(null)
     } catch (err) {
       console.error("Update product error:", err)
-      alert(err instanceof Error ? err.message : "Lỗi khi cập nhật sản phẩm.")
+      showToast(err instanceof Error ? err.message : "Lỗi khi cập nhật sản phẩm.", "error")
     } finally {
       setIsUpdatingProduct(false)
     }
@@ -671,7 +701,7 @@ export default function AdminPage() {
       setConfirmDeleteOrder(null)
     } catch (err) {
       console.error("Delete order error:", err)
-      alert(err instanceof Error ? err.message : "Không thể xóa đơn hàng.")
+      showToast(err instanceof Error ? err.message : "Không thể xóa đơn hàng.", "error")
     } finally {
       setDeletingOrderId(null)
     }
@@ -701,7 +731,7 @@ export default function AdminPage() {
   // Upload file (ảnh hoặc video) lên máy chủ
   const handleFileUpload = async (file: File, type: "image" | "video") => {
     if (type === "video" && file.size > 50 * 1024 * 1024) {
-      alert("File video quá lớn (> 50MB). Vui lòng chọn video dung lượng nhẹ hơn hoặc dán trực tiếp link YouTube/Drive vào ô bên dưới.")
+      showToast("File video quá lớn (> 50MB). Vui lòng chọn video dung lượng nhẹ hơn hoặc dán trực tiếp link YouTube/Drive vào ô bên dưới.", "error")
       return
     }
 
@@ -768,22 +798,24 @@ export default function AdminPage() {
       } else {
         const errorMsg = data?.message || data?.error || "Tải file lên thất bại."
         if (type === "video" && (res.status === 413 || errorMsg.includes("413") || errorMsg.includes("large") || errorMsg.includes("size"))) {
-          alert(
-            "File video quá lớn đối với giới hạn máy chủ tải trực tiếp.\n\n💡 Gợi ý tốt nhất: Bạn có thể dán trực tiếp link video YouTube (hoặc Drive) vào ô bên dưới để phát video chất lượng cao mà không bị giới hạn dung lượng!"
+          showToast(
+            "File video quá lớn đối với giới hạn máy chủ tải trực tiếp.\n💡 Gợi ý: Dán trực tiếp link YouTube hoặc Drive vào ô bên dưới!",
+            "error"
           )
         } else {
-          alert(errorMsg)
+          showToast(errorMsg, "error")
         }
       }
     } catch (err: any) {
       console.error("Upload error:", err)
       if (type === "video") {
-        alert(
+        showToast(
           err?.message ||
-            "Không thể tải video lên máy chủ.\n\n💡 Bạn có thể dán link video YouTube (hoặc Google Drive, link MP4) vào ô bên dưới để phát video ngay lập tức!"
+            "Không thể tải video lên máy chủ.\n💡 Bạn có thể dán link video YouTube/Drive vào ô bên dưới để phát ngay!",
+          "error"
         )
       } else {
-        alert(err?.message || "Không thể tải file lên. Hãy kiểm tra kết nối.")
+        showToast(err?.message || "Không thể tải file lên. Hãy kiểm tra kết nối.", "error")
       }
     } finally {
       if (type === "image") setUploadingImage(false)
@@ -791,11 +823,16 @@ export default function AdminPage() {
     }
   }
 
-  // Gỡ bỏ video
-  const handleRemoveVideo = async () => {
+  // Gỡ bỏ video (mở popup xác nhận)
+  const handleRemoveVideo = () => {
     if (!editingEthnic) return
-    if (!confirm(`Bạn có chắc chắn muốn gỡ video của dân tộc ${editingEthnic.name}?`)) return
+    setConfirmRemoveVideoOpen(true)
+  }
 
+  // Thực hiện gỡ bỏ video sau khi xác nhận trên Modal
+  const handleConfirmRemoveVideo = async () => {
+    if (!editingEthnic) return
+    setIsRemovingVideo(true)
     try {
       setFormData((prev) => ({ ...prev, videoUrl: "" }))
       await fetch(`/api/ethnic/${editingEthnic.slug}`, {
@@ -807,8 +844,12 @@ export default function AdminPage() {
         method: "DELETE",
       }).catch(() => null)
       setToastMessage(`Đã gỡ video của dân tộc ${editingEthnic.name}!`)
+      setConfirmRemoveVideoOpen(false)
     } catch {
       setFormData((prev) => ({ ...prev, videoUrl: "" }))
+      setConfirmRemoveVideoOpen(false)
+    } finally {
+      setIsRemovingVideo(false)
     }
   }
 
@@ -878,11 +919,11 @@ export default function AdminPage() {
         setEditingEthnic(null)
       } else {
         const errorData = res ? await res.json().catch(() => ({})) : {}
-        alert(errorData.message || errorData.error || "Cập nhật không thành công.")
+        showToast(errorData.message || errorData.error || "Cập nhật không thành công.", "error")
       }
     } catch (err) {
       console.error("Save error:", err)
-      alert("Lỗi khi lưu thông tin. Hãy kiểm tra kết nối với backend.")
+      showToast("Lỗi khi lưu thông tin. Hãy kiểm tra kết nối với backend.", "error")
     } finally {
       setIsSaving(false)
     }
@@ -940,10 +981,10 @@ export default function AdminPage() {
         setEthnicProductForm((prev) => ({ ...prev, image: finalUrl }))
         setToastMessage("Tải ảnh sản phẩm thành công! Bạn có thể nhấn 'Căn chỉnh ảnh' để điều chỉnh.")
       } else {
-        alert(data?.error || data?.message || "Tải ảnh thất bại.")
+        showToast(data?.error || data?.message || "Tải ảnh thất bại.", "error")
       }
     } catch {
-      alert("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối.")
+      showToast("Không thể upload ảnh sản phẩm. Hãy kiểm tra kết nối.", "error")
     } finally {
       setUploadingEthnicProdImg(false)
       e.target.value = ""
@@ -953,7 +994,7 @@ export default function AdminPage() {
   const handleSaveEthnicProduct = async () => {
     if (!editingEthnic) return
     if (!ethnicProductForm.name.trim()) {
-      alert("Vui lòng nhập tên sản phẩm truyền thống.")
+      showToast("Vui lòng nhập tên sản phẩm truyền thống.", "error")
       return
     }
 
@@ -961,7 +1002,7 @@ export default function AdminPage() {
     const numericPrice = isForSale ? Math.max(0, Number(ethnicProductForm.price) || 0) : 0
 
     if (isForSale && numericPrice <= 0) {
-      alert("Vui lòng nhập giá bán hợp lệ (> 0 VNĐ) khi chọn chế độ Có bán sản phẩm.")
+      showToast("Vui lòng nhập giá bán hợp lệ (> 0 VNĐ) khi chọn chế độ Có bán sản phẩm.", "error")
       return
     }
 
@@ -1019,24 +1060,34 @@ export default function AdminPage() {
       setEthnicProductFormOpen(false)
       setEditingEthnicProduct(null)
     } catch (err: any) {
-      alert(err.message || "Lỗi khi lưu sản phẩm.")
+      showToast(err.message || "Lỗi khi lưu sản phẩm.", "error")
     } finally {
       setSavingEthnicProd(false)
     }
   }
 
-  const handleDeleteEthnicProduct = async (prod: ProductItem) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${prod.name}" của dân tộc ${editingEthnic?.name}?`)) return
+  // Mở popup xác nhận xóa sản phẩm của dân tộc
+  const handleDeleteEthnicProduct = (prod: ProductItem) => {
+    setConfirmDeleteEthnicProduct(prod)
+  }
+
+  // Thực hiện xóa sau khi xác nhận trên modal
+  const handleConfirmDeleteEthnicProduct = async () => {
+    if (!confirmDeleteEthnicProduct) return
+    setIsDeletingEthnicProd(true)
     try {
-      const res = await fetch(`/api/products/${prod.id}`, { method: "DELETE" })
+      const res = await fetch(`/api/products/${confirmDeleteEthnicProduct.id}`, { method: "DELETE" })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || "Không thể xóa sản phẩm.")
       }
-      setProducts((prev) => prev.filter((p) => p.id !== prod.id))
-      setToastMessage(`Đã xóa sản phẩm "${prod.name}" thành công!`)
+      setProducts((prev) => prev.filter((p) => p.id !== confirmDeleteEthnicProduct.id))
+      setToastMessage(`Đã xóa sản phẩm "${confirmDeleteEthnicProduct.name}" thành công!`)
+      setConfirmDeleteEthnicProduct(null)
     } catch (err: any) {
-      alert(err.message || "Không thể xóa sản phẩm.")
+      showToast(err.message || "Không thể xóa sản phẩm.", "error")
+    } finally {
+      setIsDeletingEthnicProd(false)
     }
   }
 
@@ -1095,10 +1146,31 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-muted/20 pb-20">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow-2xl animate-in fade-in slide-in-from-bottom-5">
-          <Check className="size-4" />
-          <span>{toastMessage}</span>
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-medium shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-5 duration-200 border ${
+            toast.type === "error"
+              ? "bg-red-950/95 text-red-100 border-red-500/50 shadow-red-950/40"
+              : toast.type === "info"
+              ? "bg-sky-950/95 text-sky-100 border-sky-500/50 shadow-sky-950/40"
+              : "bg-emerald-950/95 text-emerald-100 border-emerald-500/50 shadow-emerald-950/40"
+          }`}
+        >
+          {toast.type === "error" ? (
+            <AlertCircle className="size-5 shrink-0 text-red-400" />
+          ) : toast.type === "info" ? (
+            <Info className="size-5 shrink-0 text-sky-400" />
+          ) : (
+            <Check className="size-5 shrink-0 text-emerald-400" />
+          )}
+          <span className="leading-snug max-w-sm whitespace-pre-line">{toast.message}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="ml-2 text-current/60 hover:text-current rounded-full p-0.5"
+          >
+            <X className="size-4" />
+          </button>
         </div>
       )}
 
@@ -3498,6 +3570,115 @@ export default function AdminPage() {
                   <>
                     <Trash2 className="mr-1.5 size-4" />
                     Xóa vĩnh viễn
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP: XÁC NHẬN GỠ VIDEO DÂN TỘC */}
+      {confirmRemoveVideoOpen && editingEthnic && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4">
+              <div className="grid size-12 shrink-0 place-items-center rounded-full bg-red-100 text-red-600">
+                <Trash2 className="size-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-serif text-lg font-bold text-foreground">
+                  Xác nhận gỡ video
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  Bạn có chắc chắn muốn gỡ video tư liệu của dân tộc{" "}
+                  <strong className="text-foreground">"{editingEthnic.name}"</strong> không?
+                </p>
+                <p className="mt-1 text-xs text-amber-600 font-medium">
+                  Video sẽ bị xóa khỏi hồ sơ dân tộc này.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmRemoveVideoOpen(false)}
+                disabled={isRemovingVideo}
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmRemoveVideo}
+                disabled={isRemovingVideo}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                {isRemovingVideo ? (
+                  <>
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                    Đang gỡ...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-1.5 size-4" />
+                    Gỡ video
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP: XÁC NHẬN XÓA SẢN PHẨM TRUYỀN THỐNG DÂN TỘC */}
+      {confirmDeleteEthnicProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4">
+              <div className="grid size-12 shrink-0 place-items-center rounded-full bg-red-100 text-red-600">
+                <Trash2 className="size-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-serif text-lg font-bold text-foreground">
+                  Xác nhận xóa sản phẩm
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  Bạn có chắc chắn muốn xóa sản phẩm{" "}
+                  <strong className="text-foreground">"{confirmDeleteEthnicProduct.name}"</strong> khỏi dân tộc{" "}
+                  <strong className="text-foreground">{editingEthnic?.name || "này"}</strong> không?
+                </p>
+                <p className="mt-1 text-xs text-red-500 font-medium">
+                  Hành động này sẽ xóa dữ liệu và không thể hoàn tác.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmDeleteEthnicProduct(null)}
+                disabled={isDeletingEthnicProd}
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmDeleteEthnicProduct}
+                disabled={isDeletingEthnicProd}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                {isDeletingEthnicProd ? (
+                  <>
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                    Đang xóa...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-1.5 size-4" />
+                    Xóa sản phẩm
                   </>
                 )}
               </Button>

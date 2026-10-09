@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Loader2,
   Sliders,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -57,6 +58,7 @@ export function ImageCropperModal({
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
   const [isProcessing, setIsProcessing] = useState(false)
   const [imgError, setImgError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
@@ -74,6 +76,7 @@ export function ImageCropperModal({
       setFitMode("cover")
       setIsProcessing(false)
       setImgError(false)
+      setErrorMessage(null)
     }
   }, [isOpen, imageUrl, aspectRatio])
 
@@ -278,7 +281,7 @@ export function ImageCropperModal({
       }
     } catch (err: any) {
       console.error("Apply crop error:", err)
-      alert("Không thể căn chỉnh ảnh này do hạn chế bản quyền ảnh nguồn. Bạn có thể tải trực tiếp ảnh về máy rồi upload lại.")
+      setErrorMessage("Không thể căn chỉnh ảnh này do hạn chế bản quyền ảnh nguồn. Bạn có thể tải trực tiếp ảnh về máy rồi upload lại.")
     } finally {
       setIsProcessing(false)
     }
@@ -308,6 +311,20 @@ export function ImageCropperModal({
             <X className="size-5" />
           </button>
         </div>
+
+        {errorMessage && (
+          <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive animate-in fade-in slide-in-from-top-1">
+            <AlertCircle className="size-4 shrink-0 mt-0.5" />
+            <div className="flex-1 leading-relaxed">{errorMessage}</div>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="ml-auto text-destructive/70 hover:text-destructive"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Body / Crop Viewport */}
         <div className="flex flex-1 flex-col items-center justify-center p-5 bg-muted/30">

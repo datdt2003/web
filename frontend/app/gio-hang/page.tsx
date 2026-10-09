@@ -148,11 +148,11 @@ export default function CartPage() {
       if (res.ok && data.success) {
         handleOrderCompleted(currentOrder.id)
       } else {
-        alert(data.message || "Có lỗi khi giả lập thanh toán.")
+        setError(data.message || "Có lỗi khi giả lập thanh toán.")
       }
     } catch (err: any) {
       console.error("Lỗi giả lập thanh toán:", err)
-      alert("Không thể giả lập thanh toán: " + (err.message || "Lỗi mạng"))
+      setError("Không thể giả lập thanh toán: " + (err.message || "Lỗi mạng"))
     } finally {
       setIsSimulatingPayment(false)
     }

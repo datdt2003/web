@@ -1,22 +1,23 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ShoppingCart } from "lucide-react"
 import { useCart } from "@/components/providers/cart-provider"
 import { useAuth } from "@/components/providers/auth-provider"
 import { formatVND, type Product } from "@/lib/ethnic-data"
+import { LoginPromptModal } from "@/components/login-prompt-modal"
 
 export function ShopProductCard({ product }: { product: Product }) {
   const { add } = useCart()
   const { user } = useAuth()
   const router = useRouter()
+  const [showLoginModal, setShowLoginModal] = useState(false)
 
   const handleAddToCart = () => {
     if (!user) {
-      alert("Vui lòng đăng nhập tài khoản để thêm sản phẩm vào giỏ hàng.")
-      const currentPath = typeof window !== "undefined" ? window.location.pathname : "/"
-      router.push(`/dang-nhap?redirect=${encodeURIComponent(currentPath)}`)
+      setShowLoginModal(true)
       return
     }
     add(product)
@@ -53,6 +54,12 @@ export function ShopProductCard({ product }: { product: Product }) {
           Thêm vào giỏ
         </button>
       </div>
+
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message={`Vui lòng đăng nhập tài khoản để thêm "${product.name}" vào giỏ hàng.`}
+      />
     </div>
   )
 }

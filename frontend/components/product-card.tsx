@@ -7,9 +7,11 @@ import { Info, X, ShoppingCart } from "lucide-react"
 import { useCart } from "@/components/providers/cart-provider"
 import { useAuth } from "@/components/providers/auth-provider"
 import { getProductDetails, formatVND, type Product } from "@/lib/ethnic-data"
+import { LoginPromptModal } from "@/components/login-prompt-modal"
 
 export function ProductCard({ product }: { product: Product }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
   const { add } = useCart()
   const { user } = useAuth()
   const router = useRouter()
@@ -17,9 +19,7 @@ export function ProductCard({ product }: { product: Product }) {
 
   const handleAddToCart = () => {
     if (!user) {
-      alert("Vui lòng đăng nhập tài khoản để thêm sản phẩm vào giỏ hàng.")
-      const currentPath = typeof window !== "undefined" ? window.location.pathname : "/"
-      router.push(`/dang-nhap?redirect=${encodeURIComponent(currentPath)}`)
+      setShowLoginModal(true)
       return
     }
     add(product)
@@ -183,6 +183,12 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         </div>
       )}
+
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message={`Vui lòng đăng nhập tài khoản để thêm "${product.name}" vào giỏ hàng.`}
+      />
     </>
   )
 }
