@@ -56,7 +56,7 @@ export default async function EthnicDetailPage({
     console.error("Load ethnic page data error:", error)
   }
 
-  // Lấy sản phẩm thuộc dân tộc từ cơ sở dữ liệu, nếu không có thì fallback sang dữ liệu mẫu
+  // Lấy sản phẩm thuộc dân tộc từ cơ sở dữ liệu, kết hợp cùng dữ liệu mẫu
   let displayProducts: any[] = []
   try {
     await connectDB()
@@ -68,8 +68,16 @@ export default async function EthnicDetailPage({
     console.error("Load ethnic products from DB error:", error)
   }
 
-  if (displayProducts.length === 0) {
-    displayProducts = productsForEthnic(ethnic.slug)
+  const staticProds = productsForEthnic(ethnic.slug)
+  if (displayProducts.length > 0) {
+    const existingIds = new Set(displayProducts.map((p) => p.id))
+    for (const sp of staticProds) {
+      if (!existingIds.has(sp.id)) {
+        displayProducts.push(sp)
+      }
+    }
+  } else {
+    displayProducts = staticProds
   }
 
   // Nếu vẫn không có sản phẩm nào, tạo sản phẩm di sản mặc định

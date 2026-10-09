@@ -990,9 +990,15 @@ export default function AdminPage() {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || "Không thể cập nhật sản phẩm.")
-        setProducts((prev) =>
-          prev.map((p) => (p.id === editingEthnicProduct.id ? { ...p, ...payload } : p))
-        )
+
+        const savedProd = data.data || { ...payload, id: editingEthnicProduct.id }
+        setProducts((prev) => {
+          const exists = prev.some((p) => p.id === editingEthnicProduct.id)
+          if (exists) {
+            return prev.map((p) => (p.id === editingEthnicProduct.id ? { ...p, ...savedProd } : p))
+          }
+          return [savedProd, ...prev]
+        })
         setToastMessage(`Đã cập nhật thông tin sản phẩm "${payload.name}"!`)
       } else {
         // Tạo sản phẩm mới
@@ -2907,7 +2913,10 @@ export default function AdminPage() {
                 {(() => {
                   const dbMatches = products.filter((p) => p.ethnicSlug === editingEthnic.slug)
                   const staticMatches = defaultEthnicProducts.filter((p) => p.ethnicSlug === editingEthnic.slug)
-                  const currentList = dbMatches.length > 0 ? dbMatches : staticMatches
+                  const currentList = [
+                    ...dbMatches,
+                    ...staticMatches.filter((s) => !dbMatches.some((db) => db.id === s.id)),
+                  ]
 
                   if (currentList.length === 0) {
                     return (

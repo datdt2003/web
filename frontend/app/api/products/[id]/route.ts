@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
+import mongoose from "mongoose"
 import { connectDB } from "@/lib/mongodb"
 import { Product } from "@/models/Product"
 import { getUserFromRequest } from "@/lib/auth"
 import { publishRealtimeEvent } from "@/lib/realtime"
+import { products as staticProducts } from "@/lib/ethnic-data"
 
 type ProductRouteContext = { params: Promise<{ id: string }> }
 
@@ -23,8 +25,16 @@ export async function GET(
     const { id } = await params
     await connectDB()
 
-    const product = await Product.findOne({ id }).lean()
+    const filter = mongoose.isValidObjectId(id)
+      ? { $or: [{ id }, { _id: id }] }
+      : { id }
+
+    const product = await Product.findOne(filter).lean()
     if (!product) {
+      const staticProd = staticProducts.find((p) => p.id === id)
+      if (staticProd) {
+        return NextResponse.json({ success: true, data: staticProd })
+      }
       return NextResponse.json(
         { error: "Không tìm thấy sản phẩm." },
         { status: 404 }
@@ -92,21 +102,42 @@ export async function PUT(
     }
 
     await connectDB()
-    const product = await Product.findOneAndUpdate({ id }, updates, {
+
+    const filter = mongoose.isValidObjectId(id)
+      ? { $or: [{ id }, { _id: id }] }
+      : { id }
+
+    let product = await Product.findOneAndUpdate(filter, updates, {
       new: true,
       runValidators: true,
     }).lean()
 
+    // Nếu chưa tồn tại trong MongoDB (ví dụ sản phẩm mẫu/mặc định p-hmong-1, p-thai-1... đang được sửa lần đầu)
     if (!product) {
-      return NextResponse.json(
-        { error: "Không tìm thấy sản phẩm." },
-        { status: 404 }
-      )
+      const staticProd = staticProducts.find((p) => p.id === id)
+
+      const newDoc = {
+        id: id,
+        name: updates.name !== undefined ? String(updates.name).trim() : (staticProd?.name || "Sản phẩm"),
+        price: updates.price !== undefined ? Number(updates.price) : (staticProd?.price || 0),
+        image: updates.image !== undefined ? String(updates.image).trim() : (staticProd?.image || "/placeholder.svg"),
+        ethnicSlug: updates.ethnicSlug !== undefined ? String(updates.ethnicSlug).trim() : (staticProd?.ethnicSlug || "Chung"),
+        category: updates.category !== undefined ? String(updates.category).trim() : (staticProd?.category || "Thủ công"),
+        description: updates.description !== undefined ? String(updates.description).trim() : (staticProd?.description || ""),
+        origin: updates.origin !== undefined ? String(updates.origin).trim() : (staticProd?.origin || ""),
+        craft: updates.craft !== undefined ? String(updates.craft).trim() : (staticProd?.craft || ""),
+        culturalValue: updates.culturalValue !== undefined ? String(updates.culturalValue).trim() : (staticProd?.culturalValue || ""),
+        forSale: updates.forSale !== undefined ? Boolean(updates.forSale) : (staticProd?.forSale ?? false),
+        inStock: updates.inStock !== undefined ? Boolean(updates.inStock) : (staticProd?.inStock ?? true),
+      }
+
+      const created = await Product.create(newDoc)
+      product = created.toObject ? created.toObject() : created
     }
 
     publishRealtimeEvent({
       type: "product.updated",
-      data: { productId: product.id, action: "updated" },
+      data: { productId: (product as any)?.id || id, action: "updated" },
     })
 
     return NextResponse.json({ success: true, data: product })
@@ -133,9 +164,18 @@ export async function DELETE(
   try {
     const { id } = await params
     await connectDB()
-    const product = await Product.findOneAndDelete({ id }).lean()
+
+    const filter = mongoose.isValidObjectId(id)
+      ? { $or: [{ id }, { _id: id }] }
+      : { id }
+
+    const product = await Product.findOneAndDelete(filter).lean()
 
     if (!product) {
+      const staticProd = staticProducts.find((p) => p.id === id)
+      if (staticProd) {
+        return NextResponse.json({ success: true, data: staticProd, message: "Đã gỡ sản phẩm." })
+      }
       return NextResponse.json(
         { error: "Không tìm thấy sản phẩm." },
         { status: 404 }
