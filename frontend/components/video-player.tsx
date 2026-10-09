@@ -14,7 +14,7 @@ function fmt(sec: number) {
 
 export function parseVideoEmbedUrl(
   url?: string
-): { type: "youtube" | "drive" | "video"; src: string; originalUrl?: string } | null {
+): { type: "youtube" | "drive" | "video"; src: string } | null {
   if (!url || typeof url !== "string") return null
   const trimmed = url.trim()
   if (!trimmed) return null
@@ -26,7 +26,7 @@ export function parseVideoEmbedUrl(
   if (ytMatch && ytMatch[1]) {
     return {
       type: "youtube",
-      src: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?rel=0&autoplay=0`,
+      src: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&autoplay=0`,
     }
   }
 
@@ -38,7 +38,6 @@ export function parseVideoEmbedUrl(
     return {
       type: "drive",
       src: `https://drive.google.com/file/d/${driveMatch[1]}/preview`,
-      originalUrl: `https://drive.google.com/file/d/${driveMatch[1]}/view`,
     }
   }
 
