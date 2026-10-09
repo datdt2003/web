@@ -31,7 +31,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         : await login(email, password)
 
       if (res.success) {
-        router.push("/")
+        const searchParams = new URLSearchParams(window.location.search)
+        const redirect = searchParams.get("redirect")
+        if (redirect && redirect.startsWith("/")) {
+          router.push(redirect)
+        } else {
+          router.push("/")
+        }
         router.refresh()
       } else {
         setError(res.error || "Thao tác không thành công.")

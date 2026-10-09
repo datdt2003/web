@@ -102,21 +102,19 @@ export function SiteHeader() {
               {open ? <X className="size-5" /> : <Menu className="size-5" />}
             </Button>
 
-            {/* Giỏ hàng */}
-            {user && (
-              <Link
-                href="/gio-hang"
-                aria-label="Giỏ hàng"
-                className={cn(buttonVariants({ variant: "ghost", size: "icon-lg" }), "relative")}
-              >
-                <ShoppingCart className="size-5" />
-                {count > 0 && (
-                  <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                    {count}
-                  </span>
-                )}
-              </Link>
-            )}
+            {/* Giỏ hàng (luôn hiển thị cho cả khách vãng lai và thành viên) */}
+            <Link
+              href="/gio-hang"
+              aria-label="Giỏ hàng"
+              className={cn(buttonVariants({ variant: "ghost", size: "icon-lg" }), "relative")}
+            >
+              <ShoppingCart className="size-5" />
+              {count > 0 && (
+                <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {count}
+                </span>
+              )}
+            </Link>
 
             {/* Tên tài khoản */}
             {user && (
@@ -189,6 +187,25 @@ export function SiteHeader() {
                   Quản trị
                 </Link>
               )}
+              <Link
+                href="/gio-hang"
+                onClick={() => setOpen(false)}
+                aria-current={isActive("/gio-hang", pathname) ? "page" : undefined}
+                className={cn(
+                  "flex items-center justify-between rounded-md px-3 py-3 text-sm font-medium hover:bg-muted",
+                  isActive("/gio-hang", pathname) && "bg-primary/10 font-semibold text-primary",
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <ShoppingCart className="size-4 text-primary" />
+                  Giỏ hàng
+                </span>
+                {count > 0 && (
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    {count}
+                  </span>
+                )}
+              </Link>
               <div className="my-2 h-px bg-border" />
               {user ? (
                 <Button

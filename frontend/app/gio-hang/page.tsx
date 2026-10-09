@@ -379,31 +379,29 @@ export default function CartPage() {
             Sản phẩm có sẵn
           </button>
 
-          {user && (
-            <button
-              type="button"
-              onClick={() => setActiveView("cart")}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
-                activeView === "cart"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card text-foreground/80 hover:bg-muted"
-              )}
-            >
-              <Package className="size-4" />
-              Giỏ hàng của bạn
-              {count > 0 && (
-                <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
-                  {count}
-                </span>
-              )}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setActiveView("cart")}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
+              activeView === "cart"
+                ? "bg-primary text-primary-foreground"
+                : "bg-card text-foreground/80 hover:bg-muted"
+            )}
+          >
+            <Package className="size-4" />
+            Giỏ hàng của bạn
+            {count > 0 && (
+              <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                {count}
+              </span>
+            )}
+          </button>
         </aside>
 
         {/* Nội dung bên phải */}
         <div>
-          {activeView === "products" || !user ? (
+          {activeView === "products" ? (
             <>
               <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">Sản phẩm có sẵn</h1>
               <p className="mt-2 text-muted-foreground">
@@ -601,34 +599,38 @@ export default function CartPage() {
                           </div>
                         </dl>
 
-                        {!user && (
-                          <p className="rounded-lg bg-muted p-2.5 text-xs text-muted-foreground">
-                            Bạn chưa đăng nhập. Bạn có thể{" "}
-                            <Link href="/dang-nhap" className="font-semibold text-primary hover:underline">
-                              đăng nhập
-                            </Link>{" "}
-                            để quản lý đơn hàng sau này.
-                          </p>
+                        {!user ? (
+                          <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+                            <p className="text-xs font-medium text-foreground">
+                              Vui lòng đăng nhập tài khoản để tiến hành đặt hàng &amp; thanh toán.
+                            </p>
+                            <Link
+                              href="/dang-nhap?redirect=/gio-hang"
+                              className={cn(buttonVariants({ size: "sm" }), "mt-3 w-full bg-primary font-semibold text-primary-foreground")}
+                            >
+                              Đăng nhập để thanh toán
+                            </Link>
+                          </div>
+                        ) : (
+                          <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="mt-4 w-full bg-primary text-primary-foreground"
+                            size="lg"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                Đang xử lý đơn hàng...
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingCart className="size-4" />
+                                Thanh toán
+                              </>
+                            )}
+                          </Button>
                         )}
-
-                        <Button
-                          type="submit"
-                          disabled={isSubmitting}
-                          className="mt-4 w-full bg-primary text-primary-foreground"
-                          size="lg"
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <Loader2 className="mr-2 size-4 animate-spin" />
-                              Đang xử lý đơn hàng...
-                            </>
-                          ) : (
-                            <>
-                              <ShoppingCart className="size-4" />
-                              Thanh toán
-                            </>
-                          )}
-                        </Button>
                       </form>
                     </div>
                   </aside>

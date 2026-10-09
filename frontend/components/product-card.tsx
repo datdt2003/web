@@ -17,9 +17,9 @@ export function ProductCard({ product }: { product: Product }) {
 
   const handleAddToCart = () => {
     if (!user) {
-      if (confirm("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng của bạn. Đi đến trang đăng nhập ngay?")) {
-        router.push("/dang-nhap")
-      }
+      alert("Vui lòng đăng nhập tài khoản để thêm sản phẩm vào giỏ hàng.")
+      const currentPath = typeof window !== "undefined" ? window.location.pathname : "/"
+      router.push(`/dang-nhap?redirect=${encodeURIComponent(currentPath)}`)
       return
     }
     add(product)
