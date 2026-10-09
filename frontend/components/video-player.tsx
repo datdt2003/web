@@ -12,7 +12,9 @@ function fmt(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`
 }
 
-export function parseVideoEmbedUrl(url?: string): { type: "youtube" | "drive" | "video"; src: string } | null {
+export function parseVideoEmbedUrl(
+  url?: string
+): { type: "youtube" | "drive" | "video"; src: string; originalUrl?: string } | null {
   if (!url || typeof url !== "string") return null
   const trimmed = url.trim()
   if (!trimmed) return null
@@ -28,12 +30,15 @@ export function parseVideoEmbedUrl(url?: string): { type: "youtube" | "drive" | 
     }
   }
 
-  // 2. Google Drive
-  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
+  // 2. Google Drive (file/d/ID, open?id=ID, uc?id=ID, etc.)
+  const driveMatch =
+    trimmed.match(/(?:drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)|drive\.google\.com\/.*[?&]id=)([a-zA-Z0-9_-]{20,})/) ||
+    trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
   if (driveMatch && driveMatch[1]) {
     return {
       type: "drive",
       src: `https://drive.google.com/file/d/${driveMatch[1]}/preview`,
+      originalUrl: `https://drive.google.com/file/d/${driveMatch[1]}/view`,
     }
   }
 
@@ -74,7 +79,19 @@ export function VideoPlayer({ poster, title, videoUrl }: { poster: string; title
         )}
         <div className="flex items-center justify-between gap-2 bg-card px-4 py-3">
           <p className="text-sm font-medium text-foreground">Tư liệu văn hóa · Người {title}</p>
-          <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">HD</span>
+          <div className="flex items-center gap-2">
+            {embed.type === "drive" && (embed as any).originalUrl && (
+              <a
+                href={(embed as any).originalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-medium text-primary hover:underline"
+              >
+                Mở trên Drive ↗
+              </a>
+            )}
+            <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">HD</span>
+          </div>
         </div>
       </div>
     )

@@ -2436,15 +2436,29 @@ export default function AdminPage() {
                     <span className="text-xs text-muted-foreground">hoặc</span>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Input
                       value={formData.videoUrl || ""}
                       onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
                       placeholder="Dán link YouTube (https://youtu.be/...), Google Drive hoặc link file (.mp4)"
                       className="text-xs"
                     />
+
+                    {formData.videoUrl?.includes("drive.google.com") && (
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300 animate-in fade-in-50">
+                        <p className="font-semibold flex items-center gap-1.5 text-amber-800 dark:text-amber-200">
+                          ⚠️ Cách để ai cũng xem được (kể cả người không đăng nhập Google):
+                        </p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-amber-900/90 dark:text-amber-200/90">
+                          Vào Google Drive &rarr; Nhấp chuột phải vào file video &rarr; Chọn <strong>Chia sẻ (Share)</strong> &rarr; Đổi từ <strong>&quot;Bị hạn chế&quot;</strong> sang <strong>&quot;Bất kỳ ai có đường liên kết&quot; (Anyone with the link)</strong>.
+                          <br />
+                          👉 Sau khi đổi sang <em>Bất kỳ ai có đường liên kết</em>, bất kỳ người dùng nào (dù không có hoặc không đăng nhập tài khoản Google) đều xem được video 100%!
+                        </p>
+                      </div>
+                    )}
+
                     <p className="text-[11px] text-muted-foreground">
-                      💡 <strong>Khuyên dùng:</strong> Dán link YouTube (phim tài liệu VTV5, video văn hóa,...) để phát độ nét cao mượt mà không bị giới hạn dung lượng lưu trữ.
+                      💡 <strong>Khuyên dùng:</strong> Dán link YouTube (phim tài liệu VTV5, video văn hóa,...) để phát độ nét cao mượt mà không bị giới hạn dung lượng và không bao giờ yêu cầu người xem đăng nhập.
                     </p>
                   </div>
                 </div>
